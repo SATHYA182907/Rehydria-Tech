@@ -179,3 +179,95 @@ export async function getPlatformStats(): Promise<PlatformStats | null> {
     enrollmentsActive: Number(d.enrollmentsActive ?? 0),
   };
 }
+
+/* ── Course detail (public program page) ─────────────────────────────────── */
+
+export interface CurriculumModule {
+  id: string;
+  title: string;
+  summary: string;
+  lessons: { id: string; title: string; type: string; durationMinutes: number | null; isPreview: boolean }[];
+}
+
+export interface CourseDetail extends CourseCard {
+  description: string;
+  objectives: string[];
+  prerequisites: string[];
+  certificateEnabled: boolean;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  curriculum: CurriculumModule[];
+}
+
+export async function getCourseBySlug(slug: string): Promise<CourseDetail | null> {
+  "use cache";
+  cacheTag(CATALOG_TAGS.catalog);
+  cacheLife("hours");
+  if (!isFirebaseConfigured()) return null;
+
+  const db = adminDb();
+  const snap = await db.collection(COLLECTIONS.courses).where("slug", "==", slug).where("status", "==", "published").limit(1).get();
+  const doc = snap.docs[0];
+  if (!doc) return null;
+  cacheTag(CATALOG_TAGS.course(doc.id));
+  const d = doc.data() as Doc<Course<unknown>>;
+
+  const [modulesSnap, lessonsSnap] = await Promise.all([
+    db.collection(COLLECTIONS.courseModules).where("courseId", "==", doc.id).orderBy("order", "asc").get(),
+    db.collection(COLLECTIONS.lessons).where("courseId", "==", doc.id).orderBy("order", "asc").get(),
+  ]);
+  const lessons = lessonsSnap.docs
+    .map((l) => ({ id: l.id, ...(l.data() as { moduleId: string; title: string; type: string; durationMinutes: number | null; isPreview: boolean; status: string }) }))
+    .filter((l) => l.status === "published");
+  const curriculum = modulesSnap.docs
+    .filter((m) => m.data().status === "published")
+    .map((m) => ({
+      id: m.id,
+      title: String(m.data().title ?? ""),
+      summary: String(m.data().summary ?? ""),
+      lessons: lessons
+        .filter((l) => l.moduleId === m.id)
+        .map((l) => ({ id: l.id, title: l.title, type: l.type, durationMinutes: l.durationMinutes ?? null, isPreview: Boolean(l.isPreview) })),
+    }));
+
+  return {
+    ...toCourseCard(doc.id, d),
+    description: d.description ?? "",
+    objectives: d.objectives ?? [],
+    prerequisites: d.prerequisites ?? [],
+    certificateEnabled: d.certificate?.enabled ?? true,
+    seoTitle: d.seo?.title ?? null,
+    seoDescription: d.seo?.description ?? null,
+    curriculum,
+  };
+}
+
+/* ── Company settings (footer, contact page, certificates) ───────────────── */
+
+export const COMPANY_TAG = "company";
+
+export interface PublicCompany {
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  logoUrl: string | null;
+  socials: Partial<Record<"linkedin" | "instagram" | "youtube" | "x" | "github", string>>;
+}
+
+export async function getCompanySettings(): Promise<PublicCompany> {
+  "use cache";
+  cacheTag(COMPANY_TAG);
+  cacheLife("hours");
+  const empty: PublicCompany = { email: null, phone: null, address: null, logoUrl: null, socials: {} };
+  if (!isFirebaseConfigured()) return empty;
+  const snap = await adminDb().collection(COLLECTIONS.settings).doc(SETTINGS_DOCS.company).get();
+  if (!snap.exists) return empty;
+  const d = snap.data() ?? {};
+  return {
+    email: (d.email as string | null) || null,
+    phone: (d.phone as string | null) || null,
+    address: (d.address as string | null) || null,
+    logoUrl: publicStorageUrl(d.logoPath as string | null),
+    socials: (d.socials as PublicCompany["socials"]) ?? {},
+  };
+}

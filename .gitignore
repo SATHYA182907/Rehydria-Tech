@@ -53,3 +53,6 @@ ui-debug.log*
 functions/lib/
 functions/.env.*
 *-service-account*.json
+
+# public Firebase web config (no secrets)
+!.env.production

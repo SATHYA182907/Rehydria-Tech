@@ -1,6 +1,6 @@
 # Rehydria Platform — Implementation Plan
 
-> Last updated: 2026-11-17 · Current phase: **Phase 3 complete → Phase 4 next**
+> Last updated: 2026-11-17 · Current phase: **All pages built (Phases 4, 5 and the page layer of 6, 8 and 12) → Razorpay (Phase 7) + course content next**
 
 ## Definition of done (every phase)
 
@@ -26,6 +26,21 @@
 | Guide marketplace | ₹200 product, purchase, secure download | Payments, Storage |
 | Admin | Overview stats, CRUD for everything, exports, announcements | All of the above |
 | Email | 10 branded templates, retries, non-blocking | Resend, functions |
+
+## Status: all pages built (2026-11-18)
+
+Every route in the specification exists, wired to real data:
+
+| Area | Routes | State |
+|---|---|---|
+| Public | `/`, `/about`, `/internships`, `/internships/[slug]`, `/internships/[slug]/enroll`, `/hackathon-guide`, `/contact`, `/faq`, `/legal/[policy]`, `/verify`, `/verify/[certificateId]`, 404, sitemap, robots, OG image | Live. Enrollment and guide purchase show "opens soon" until Razorpay keys exist; legal pages await Rehydria's policy text |
+| Auth | `/login`, `/register`, `/reset-password`, `/account/action` | Live: email/password + Google, httpOnly session cookies, rate-limited |
+| Student | `/dashboard`, `/courses`, `/courses/[courseId]`, `/materials`, `/assessments`, `/results`, `/certificates`, `/profile` | Live: enrollment-gated course player with lesson completion and progress, profile editing. Exam engine (Phase 9), PDF downloads (Phase 10) and video (Bunny) pending |
+| Admin | `/admin` + 12 sections + `/admin/courses/new`, `/admin/courses/[id]` | Live: overview, searchable/filterable tables for every collection, course create/edit, company settings. Module/lesson/question/product editors come with course content entry |
+
+Verified end-to-end on the production build against the Firebase emulators (register, login,
+logout, admin grant, admin 404 for students, course creation → public page, lesson completion,
+certificate verification, contact form, enrollment gating, rate limiting).
 
 ## Roadmap
 

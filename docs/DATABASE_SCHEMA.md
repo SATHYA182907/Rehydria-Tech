@@ -382,6 +382,7 @@ Append-only. Never updated or deleted by application code.
 
 | Collection | Purpose |
 |---|---|
+| `contactMessages/{id}` | Contact form submissions `{ fullName, email, phone?, topic, message, status: "new"\|"replied", createdAt }` |
 | `mailQueue/{id}` | Outbox: `{ to, template, data, status: "queued"\|"sending"\|"sent"\|"failed", attempts, lastError, sentAt, resendId }` |
 | `rateLimits/{bucketKey}` | Fixed-window counters `{ count, windowStart }` keyed by `{action}:{ip-or-uid}`; TTL policy on `expireAt` |
 | `courseMembers/{courseId}_{uid}` | `{ active: true }`: a cheap membership marker used by security rules (`exists()`), written in the same transaction that activates an enrollment |

@@ -2,7 +2,7 @@
 
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
-import { createContext, use, useEffect, useState, type ReactNode } from "react";
+import { createContext, Suspense, use, useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 
@@ -20,7 +20,6 @@ export function useLenis(): Lenis | null {
  */
 export function SmoothScrollProvider({ children }: { children: ReactNode }) {
   const [lenis, setLenis] = useState<Lenis | null>(null);
-  const pathname = usePathname();
 
   useEffect(() => {
     // Touch devices keep native scrolling: Lenis does not smooth touch input, so its
@@ -60,14 +59,26 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // New route: jump to top immediately and recompute triggers for the new DOM.
+  return (
+    <LenisContext value={lenis}>
+      {children}
+      {/* Reads the pathname (runtime data on dynamic routes), so it sits in its own boundary. */}
+      <Suspense fallback={null}>
+        <RouteChangeReset lenis={lenis} />
+      </Suspense>
+    </LenisContext>
+  );
+}
+
+/** New route: jump to top immediately and recompute triggers for the new DOM. */
+function RouteChangeReset({ lenis }: { lenis: Lenis | null }) {
+  const pathname = usePathname();
   useEffect(() => {
     lenis?.scrollTo(0, { immediate: true, force: true });
     const id = requestAnimationFrame(() => ScrollTrigger.refresh());
     return () => cancelAnimationFrame(id);
   }, [pathname, lenis]);
-
-  return <LenisContext value={lenis}>{children}</LenisContext>;
+  return null;
 }
 
 /** Pauses smooth scrolling while an overlay (dialog, sheet, menu) is open. */

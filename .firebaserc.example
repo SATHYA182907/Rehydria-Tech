@@ -1,7 +1,6 @@
 {
   "projects": {
-    "default": "rehydria-dev",
-    "dev": "rehydria-dev",
-    "prod": "rehydria-prod"
+    "default": "rehydria-tech",
+    "prod": "rehydria-tech"
   }
 }

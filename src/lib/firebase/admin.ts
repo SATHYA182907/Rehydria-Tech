@@ -14,11 +14,18 @@ import { firebaseAdminEnv } from "@/lib/env/server";
 const APP_NAME = "rehydria-admin";
 
 /**
- * True when a Firebase project is configured. Public catalog reads return empty results
- * instead of failing when it is not, so the marketing site can build before setup.
+ * True when the server can use the Admin SDK: a project id plus credentials (the emulator,
+ * a service account key, or FIREBASE_ADMIN_USE_ADC=true on a Google runtime / Vercel OIDC).
+ * The public web config alone is NOT enough. When false, server reads return empty results
+ * and server features show a setup state instead of failing, so the site builds before setup.
  */
 export function isFirebaseConfigured(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+  if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) return false;
+  return (
+    Boolean(process.env.FIRESTORE_EMULATOR_HOST) ||
+    Boolean(process.env.FIREBASE_ADMIN_CLIENT_EMAIL && process.env.FIREBASE_ADMIN_PRIVATE_KEY) ||
+    process.env.FIREBASE_ADMIN_USE_ADC === "true"
+  );
 }
 
 export function isUsingEmulator(): boolean {

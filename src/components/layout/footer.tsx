@@ -8,7 +8,7 @@ import { FooterWordmark } from "./footer-wordmark";
 import { Container } from "./section";
 import { Logo } from "./logo";
 
-type FooterCompany = Partial<Pick<CompanySettings, "email" | "phone" | "address" | "socials" | "logoPath">>;
+type FooterCompany = Partial<Pick<CompanySettings, "email" | "phone" | "address" | "socials">> & { logoUrl?: string | null };
 
 /**
  * Site footer. Contact details come from `settings/company` (admin-configured); any
@@ -26,7 +26,7 @@ export function Footer({ company = {} }: { company?: FooterCompany }) {
     <footer className="relative overflow-hidden bg-forest-deep text-on-forest">
       <Container className="grid gap-14 pt-20 pb-10 lg:grid-cols-12 lg:pt-28">
         <div className="flex flex-col gap-6 lg:col-span-4">
-          <Logo onDark />
+          <Logo onDark logoUrl={company.logoUrl} />
           <p className="max-w-sm text-[15px] leading-relaxed text-on-forest-soft">{siteConfig.description}</p>
           {contacts.length > 0 && (
             <ul className="flex flex-col gap-3 text-sm">

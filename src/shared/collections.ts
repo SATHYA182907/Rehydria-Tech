@@ -26,6 +26,7 @@ export const COLLECTIONS = {
   auditLogs: "auditLogs",
   mailQueue: "mailQueue",
   rateLimits: "rateLimits",
+  contactMessages: "contactMessages",
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];

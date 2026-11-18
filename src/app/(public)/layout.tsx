@@ -1,15 +1,18 @@
 import { Cursor } from "@/components/animations/cursor";
 import { SmoothScrollProvider } from "@/components/animations/smooth-scroll-provider";
 import { Footer } from "@/components/layout/footer";
-import { Navbar } from "@/components/layout/navbar";
+import { Suspense } from "react";
+import { Navbar, NavbarWithPath } from "@/components/layout/navbar";
+import { getCompanySettings, getPublishedCourses } from "@/services/catalog";
 
 /**
- * Marketing shell: smooth scrolling, desktop cursor, navigation and footer.
- * Programs for the mega menu and company contact details are wired to Firestore in
- * Phase 4/5 via cached services; until then the navbar shows a plain Internships link and
- * the footer hides empty contact fields.
+ * Marketing shell: smooth scrolling, desktop cursor, navigation and footer. Programs for the
+ * mega menu and company contact details come from cached Firestore reads (prerendered).
  */
-export default function PublicLayout({ children }: LayoutProps<"/">) {
+export default async function PublicLayout({ children }: LayoutProps<"/">) {
+  const [courses, company] = await Promise.all([getPublishedCourses(), getCompanySettings()]);
+  const programs = courses.map((c) => ({ slug: c.slug, title: c.title, summary: c.shortDescription, durationLabel: c.durationLabel }));
+
   return (
     <SmoothScrollProvider>
       <a
@@ -18,11 +21,13 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
       >
         Skip to content
       </a>
-      <Navbar />
+      <Suspense fallback={<Navbar programs={programs} logoUrl={company.logoUrl} />}>
+        <NavbarWithPath programs={programs} logoUrl={company.logoUrl} />
+      </Suspense>
       <div id="main" className="flex flex-1 flex-col">
         {children}
       </div>
-      <Footer />
+      <Footer company={company} />
       <Cursor />
     </SmoothScrollProvider>
   );

@@ -154,6 +154,10 @@ rehydria/
 
 `cacheComponents: true` is enabled. Consequences we design around:
 
+- **Dynamic catalog routes** (`/internships/[slug]`, `/enroll`, `/legal/[policy]`) list build-time slugs in
+  `generateStaticParams` and await `params` inside `<Suspense>`, so courses published after a deploy
+  render on demand and are then cached (ISR with Partial Prefetching). Unknown slugs stream the
+  404 UI with `noindex` (status 200, inherent to streaming).
 - **Public catalog pages** (`/`, `/internships`, `/internships/[slug]`, `/hackathon-guide`)
   read Firestore through `src/services/catalog` (implemented in Phase 3) inside `'use cache'` functions tagged `catalog`, `course:{id}`,
   `product:{id}`, with `cacheLife('hours')`. Admin mutations (Server Actions) call

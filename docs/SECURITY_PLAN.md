@@ -196,6 +196,9 @@ strict-origin-when-cross-origin`, `Permissions-Policy` (camera/mic/geo/topics of
 for self and Razorpay), `Cross-Origin-Opener-Policy: same-origin-allow-popups` (Google sign-in popup),
 and `poweredByHeader: false`.
 
+Local emulator origins (`http://127.0.0.1:*`) are added to `connect-src` only in development or when
+`NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true`; never in Vercel.
+
 **CSP decision: static policy, no nonces.** Next.js nonces require every page to render dynamically
 and are incompatible with the Cache Components static shell / partial prerendering that the
 architecture depends on for performance and SEO. The policy therefore allows `'unsafe-inline'`

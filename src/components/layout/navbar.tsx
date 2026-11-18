@@ -12,6 +12,7 @@ import { Dialog, DialogClose, DialogDescription, DialogTitle, DialogTrigger, She
 import { primaryNav, type NavLink, type NavProgram } from "@/config/navigation";
 import { routes } from "@/config/routes";
 import { siteConfig } from "@/config/site";
+import { useSignedInHint } from "@/lib/auth/client-session";
 import { cn } from "@/lib/utils/cn";
 import { Logo } from "./logo";
 
@@ -19,6 +20,16 @@ interface NavbarProps {
   /** Published programs for the Internships mega menu (from Firestore). Empty → plain link. */
   programs?: NavProgram[];
   logoUrl?: string | null;
+  /** Current path for active states; null while streaming (no active indicator). */
+  pathname?: string | null;
+}
+
+/**
+ * Navbar with the active route. `usePathname()` is runtime data on dynamic routes, so the
+ * layout renders this inside <Suspense> with a pathname-less <Navbar> as the fallback.
+ */
+export function NavbarWithPath(props: Omit<NavbarProps, "pathname">) {
+  return <Navbar {...props} pathname={usePathname()} />;
 }
 
 function isActive(pathname: string, href: string) {
@@ -57,8 +68,8 @@ function useScrollState() {
   return state;
 }
 
-export function Navbar({ programs = [], logoUrl }: NavbarProps) {
-  const pathname = usePathname();
+export function Navbar({ programs = [], logoUrl, pathname: currentPath = null }: NavbarProps) {
+  const pathname = currentPath ?? "";
   const { scrolled, hidden } = useScrollState();
   const [hovered, setHovered] = useState<string | null>(null);
   const [menuValue, setMenuValue] = useState("");
@@ -66,6 +77,8 @@ export function Navbar({ programs = [], logoUrl }: NavbarProps) {
   const activeHref = primaryNav.find((l) => isActive(pathname, l.href))?.href ?? null;
   const indicatorHref = hovered ?? activeHref;
   const keepVisible = menuValue !== "";
+  const signedIn = useSignedInHint();
+  const accountHref = signedIn === "admin" ? routes.admin.root : routes.dashboard.root;
 
   return (
     <header
@@ -144,7 +157,7 @@ export function Navbar({ programs = [], logoUrl }: NavbarProps) {
 
         <div className="flex items-center gap-1.5">
           <Button asChild variant="ghost" size="sm" className="hidden rounded-pill sm:inline-flex">
-            <Link href={routes.login}>Log in</Link>
+            <Link href={signedIn ? accountHref : routes.login}>{signedIn ? "Dashboard" : "Log in"}</Link>
           </Button>
           <Magnetic className="hidden sm:inline-flex">
             <Button asChild size="sm">
@@ -154,7 +167,7 @@ export function Navbar({ programs = [], logoUrl }: NavbarProps) {
               </Link>
             </Button>
           </Magnetic>
-          <MobileMenu pathname={pathname} programs={programs} />
+          <MobileMenu pathname={pathname} programs={programs} accountHref={signedIn ? accountHref : null} />
         </div>
       </div>
     </header>
@@ -204,7 +217,7 @@ function ProgramsMenu({ programs }: { programs: NavProgram[] }) {
   );
 }
 
-function MobileMenu({ pathname, programs }: { pathname: string; programs: NavProgram[] }) {
+function MobileMenu({ pathname, programs, accountHref }: { pathname: string; programs: NavProgram[]; accountHref: string | null }) {
   const [open, setOpen] = useState(false);
   const reduceMotion = useReducedMotion();
   const links: NavLink[] = [{ label: "Home", href: "/" }, ...primaryNav];
@@ -268,7 +281,7 @@ function MobileMenu({ pathname, programs }: { pathname: string; programs: NavPro
               <Link href={routes.internships}>Enroll now</Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
-              <Link href={routes.login}>Log in</Link>
+              <Link href={accountHref ?? routes.login}>{accountHref ? "Dashboard" : "Log in"}</Link>
             </Button>
             <p className="pt-4 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">{siteConfig.tagline}</p>
           </div>

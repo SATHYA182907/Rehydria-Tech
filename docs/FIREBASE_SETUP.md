@@ -10,6 +10,19 @@
 - A Google Cloud billing account. Cloud Functions v2, Secret Manager and signed URLs need the **Blaze** plan.
 - Java 21+ for the Firestore/Storage emulators
 
+## Current project
+
+Production project: **`rehydria-tech`** (web config committed in `.env.production`; it is public by
+design). Still required for the server to work in production:
+
+1. Firebase Console → Authentication → enable **Email/Password** and **Google**; add the Vercel
+   domain(s) under *Authorized domains*.
+2. Create a service account key (§3) and set `FIREBASE_ADMIN_CLIENT_EMAIL` and
+   `FIREBASE_ADMIN_PRIVATE_KEY` in Vercel (Production + Preview). Without these, sign-in returns
+   "not available yet" and catalog pages render their empty states.
+3. Create Firestore (asia-south1) and deploy rules + indexes: `pnpm exec firebase deploy --only firestore:rules,firestore:indexes,storage --project rehydria-tech`.
+4. Register, then grant yourself admin: `pnpm admin:grant you@example.com` (with the admin env vars in `.env.local`).
+
 ## 1. Create the Firebase projects
 
 Create two projects so test data and live payments never mix:

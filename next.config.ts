@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
+/** Local Firebase Emulator Suite (never set in Vercel). */
+const useEmulators = process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true";
 
 /**
  * Content Security Policy (docs/SECURITY_PLAN.md §10).
@@ -33,7 +35,8 @@ const csp = {
     "https://api.razorpay.com",
     "https://lumberjack.razorpay.com",
     "https://www.google.com/recaptcha/",
-    ...(isDev ? ["ws:", "http://127.0.0.1:*", "http://localhost:*"] : []),
+    ...(isDev ? ["ws:"] : []),
+    ...(isDev || useEmulators ? ["http://127.0.0.1:*", "http://localhost:*"] : []),
   ],
   "frame-src": [
     "'self'",

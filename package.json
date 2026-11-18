@@ -16,7 +16,8 @@
     "firebase:deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
     "firebase:deploy:functions": "firebase deploy --only functions",
     "emulators:persist": "firebase emulators:start --project demo-rehydria --only firestore,auth,storage --import=.emulator-data --export-on-exit",
-    "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts"
+    "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
+    "admin:grant": "tsx --env-file-if-exists=.env.local scripts/admin-grant.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
