@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ArrowUpRight, Menu } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BookOpen, ChevronDown, Menu, UserPlus } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -79,6 +79,7 @@ export function Navbar({ programs = [], logoUrl, pathname: currentPath = null }:
   const keepVisible = menuValue !== "";
   const signedIn = useSignedInHint();
   const accountHref = signedIn === "admin" ? routes.admin.root : routes.dashboard.root;
+  const enrollHref = routes.enroll(Boolean(signedIn));
 
   return (
     <header
@@ -108,7 +109,7 @@ export function Navbar({ programs = [], logoUrl, pathname: currentPath = null }:
             {primaryNav.map((link) => {
               const active = isActive(pathname, link.href);
               const showIndicator = indicatorHref === link.href;
-              const hasMega = link.href === routes.internships && programs.length > 0;
+              const hasMega = link.href === routes.internships;
               const itemClass = cn(
                 "relative inline-flex h-10 items-center gap-1 rounded-pill px-4 text-[15px] transition-colors",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-moss",
@@ -136,9 +137,9 @@ export function Navbar({ programs = [], logoUrl, pathname: currentPath = null }:
                       </Nav.Trigger>
                       <Nav.Content
                         onPointerMove={(e) => e.preventDefault()}
-                        className="anim-pop absolute top-full left-1/2 mt-3 w-[min(720px,90vw)] -translate-x-1/2"
+                        className="anim-pop absolute top-full left-1/2 mt-3 w-[min(640px,90vw)] -translate-x-1/2"
                       >
-                        <ProgramsMenu programs={programs} />
+                        <InternshipsMenu programs={programs} enrollHref={enrollHref} signedIn={Boolean(signedIn)} />
                       </Nav.Content>
                     </>
                   ) : (
@@ -161,64 +162,81 @@ export function Navbar({ programs = [], logoUrl, pathname: currentPath = null }:
           </Button>
           <Magnetic className="hidden sm:inline-flex">
             <Button asChild size="sm">
-              <Link href={routes.internships}>
+              <Link href={enrollHref}>
                 Enroll now
                 <ArrowRight aria-hidden="true" className="transition-transform duration-300 group-hover/button:translate-x-0.5" />
               </Link>
             </Button>
           </Magnetic>
-          <MobileMenu pathname={pathname} programs={programs} accountHref={signedIn ? accountHref : null} />
+          <MobileMenu pathname={pathname} programs={programs} accountHref={signedIn ? accountHref : null} enrollHref={enrollHref} />
         </div>
       </div>
     </header>
   );
 }
 
-function ProgramsMenu({ programs }: { programs: NavProgram[] }) {
+/**
+ * Internships dropdown: two choices. "Courses" lists published programs (from Firestore);
+ * "Enroll" sends visitors to sign up / sign in, then back to choose a program.
+ */
+function InternshipsMenu({ programs, enrollHref, signedIn }: { programs: NavProgram[]; enrollHref: string; signedIn: boolean }) {
+  const option =
+    "group flex h-full flex-col gap-3 rounded-sm p-5 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-moss";
   return (
-    <div className="grid grid-cols-5 overflow-hidden rounded-md border border-line bg-surface shadow-float">
-      <ul className="col-span-3 flex flex-col gap-1 p-3">
-        {programs.map((program, i) => (
-          <li key={program.slug}>
-            <Nav.Link asChild>
-              <Link
-                href={routes.internship(program.slug)}
-                className="group flex gap-4 rounded-sm p-3 transition-colors hover:bg-canvas-2 focus-visible:bg-canvas-2 focus-visible:outline-none"
-              >
-                <span className="font-mono text-xs text-moss">{String(i + 1).padStart(2, "0")}</span>
-                <span className="flex flex-1 flex-col gap-1">
-                  <span className="flex items-center justify-between gap-2 font-medium text-ink">
-                    {program.title}
-                    <ArrowUpRight
-                      aria-hidden="true"
-                      className="size-4 text-ink-soft opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100"
-                    />
-                  </span>
-                  <span className="line-clamp-2 text-sm text-ink-soft">{program.summary}</span>
-                  {program.durationLabel && (
-                    <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">{program.durationLabel}</span>
-                  )}
-                </span>
-              </Link>
-            </Nav.Link>
-          </li>
-        ))}
-      </ul>
-      <div className="engineering-grid col-span-2 flex flex-col justify-between gap-6 bg-forest p-6 text-on-forest [background-image:radial-gradient(rgb(184_228_201/0.12)_1px,transparent_1px)]">
-        <p className="font-mono text-eyebrow uppercase text-mint">[ Programs ]</p>
-        <p className="text-xl leading-snug font-medium tracking-tight">Hands-on internships with real hardware and a verifiable certificate.</p>
+    <div className="grid grid-cols-2 gap-2 rounded-md border border-line bg-surface p-2 shadow-float">
+      <div className="flex flex-col rounded-sm bg-canvas-2">
         <Nav.Link asChild>
-          <Link href={routes.internships} className="inline-flex items-center gap-2 text-sm font-medium text-mint hover:underline">
-            Compare all programs <ArrowRight aria-hidden="true" className="size-4" />
+          <Link href={routes.internships} className={cn(option, "hover:bg-mint-soft/60")}>
+            <span className="flex size-10 items-center justify-center rounded-sm bg-surface text-moss shadow-xs">
+              <BookOpen aria-hidden="true" className="size-5" />
+            </span>
+            <span className="flex items-center justify-between gap-2 text-lg font-medium text-ink">
+              Courses
+              <ArrowUpRight aria-hidden="true" className="size-4 text-ink-soft transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </span>
+            <span className="text-sm text-ink-soft">Browse the available internship programs, curriculum and fees.</span>
           </Link>
         </Nav.Link>
+        {programs.length > 0 && (
+          <ul className="flex flex-col gap-0.5 border-t border-line px-3 pt-2 pb-3">
+            {programs.map((program) => (
+              <li key={program.slug}>
+                <Nav.Link asChild>
+                  <Link
+                    href={routes.internship(program.slug)}
+                    className="flex items-center justify-between gap-2 rounded-xs px-2 py-2 text-sm text-ink transition-colors hover:bg-surface focus-visible:bg-surface focus-visible:outline-none"
+                  >
+                    {program.title}
+                    {program.durationLabel && <span className="font-mono text-[11px] text-ink-soft">{program.durationLabel}</span>}
+                  </Link>
+                </Nav.Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
+      <Nav.Link asChild>
+        <Link href={enrollHref} className={cn(option, "bg-forest text-on-forest hover:bg-forest-deep")}>
+          <span className="flex size-10 items-center justify-center rounded-sm bg-white/10 text-mint">
+            <UserPlus aria-hidden="true" className="size-5" />
+          </span>
+          <span className="flex items-center justify-between gap-2 text-lg font-medium">
+            Enroll
+            <ArrowRight aria-hidden="true" className="size-4 text-mint transition-transform duration-300 group-hover:translate-x-0.5" />
+          </span>
+          <span className="text-sm text-on-forest-soft">
+            {signedIn ? "Choose a program and complete your enrollment." : "Create your account or sign in to enroll in a program."}
+          </span>
+          <span className="mt-auto font-mono text-[11px] uppercase tracking-[0.14em] text-mint">{signedIn ? "Choose a program" : "Sign up · Sign in"}</span>
+        </Link>
+      </Nav.Link>
     </div>
   );
 }
 
-function MobileMenu({ pathname, programs, accountHref }: { pathname: string; programs: NavProgram[]; accountHref: string | null }) {
+function MobileMenu({ pathname, programs, accountHref, enrollHref }: { pathname: string; programs: NavProgram[]; accountHref: string | null; enrollHref: string }) {
   const [open, setOpen] = useState(false);
+  const [internshipsOpen, setInternshipsOpen] = useState(false);
   const reduceMotion = useReducedMotion();
   const links: NavLink[] = [{ label: "Home", href: "/" }, ...primaryNav];
 
@@ -249,36 +267,55 @@ function MobileMenu({ pathname, programs, accountHref }: { pathname: string; pro
                 transition={{ delay: 0.06 + i * 0.05, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                 className="border-b border-line"
               >
-                <DialogClose asChild>
-                  <Link
-                    href={link.href}
-                    aria-current={isActive(pathname, link.href) ? "page" : undefined}
-                    className="flex items-baseline justify-between py-4 text-[2.1rem] leading-none font-medium tracking-[-0.04em] text-ink aria-[current=page]:text-moss"
-                  >
-                    {link.label}
-                    <span className="font-mono text-xs text-ink-soft">{String(i + 1).padStart(2, "0")}</span>
-                  </Link>
-                </DialogClose>
+                {link.href === routes.internships ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setInternshipsOpen((v) => !v)}
+                      aria-expanded={internshipsOpen}
+                      aria-controls="mobile-internships"
+                      className="flex w-full items-center justify-between py-4 text-left text-[2.1rem] leading-none font-medium tracking-[-0.04em] text-ink"
+                    >
+                      {link.label}
+                      <ChevronDown aria-hidden="true" className={cn("size-6 text-ink-soft transition-transform duration-300", internshipsOpen && "rotate-180 text-moss")} />
+                    </button>
+                    {internshipsOpen && (
+                      <div id="mobile-internships" className="anim-fade grid grid-cols-2 gap-2 pb-4" data-state="open">
+                        <DialogClose asChild>
+                          <Link href={routes.internships} className="flex flex-col gap-2 rounded-md bg-canvas-2 p-4">
+                            <BookOpen aria-hidden="true" className="size-5 text-moss" />
+                            <span className="text-lg font-medium">Courses</span>
+                            <span className="text-xs text-ink-soft">{programs.length ? programs.map((p) => p.title).join(" · ") : "Browse programs"}</span>
+                          </Link>
+                        </DialogClose>
+                        <DialogClose asChild>
+                          <Link href={enrollHref} className="flex flex-col gap-2 rounded-md bg-forest p-4 text-on-forest">
+                            <UserPlus aria-hidden="true" className="size-5 text-mint" />
+                            <span className="text-lg font-medium">Enroll</span>
+                            <span className="text-xs text-on-forest-soft">{accountHref ? "Choose a program" : "Sign up or sign in"}</span>
+                          </Link>
+                        </DialogClose>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <DialogClose asChild>
+                    <Link
+                      href={link.href}
+                      aria-current={isActive(pathname, link.href) ? "page" : undefined}
+                      className="flex items-baseline justify-between py-4 text-[2.1rem] leading-none font-medium tracking-[-0.04em] text-ink aria-[current=page]:text-moss"
+                    >
+                      {link.label}
+                      <span className="font-mono text-xs text-ink-soft">{String(i + 1).padStart(2, "0")}</span>
+                    </Link>
+                  </DialogClose>
+                )}
               </motion.li>
             ))}
           </ul>
-          {programs.length > 0 && (
-            <div className="mt-8 flex flex-wrap gap-2">
-              {programs.map((p) => (
-                <DialogClose asChild key={p.slug}>
-                  <Link
-                    href={routes.internship(p.slug)}
-                    className="rounded-pill border border-line-strong px-3.5 py-1.5 text-sm text-ink-soft"
-                  >
-                    {p.title}
-                  </Link>
-                </DialogClose>
-              ))}
-            </div>
-          )}
           <div className="mt-auto flex flex-col gap-3 pt-10">
             <Button asChild size="lg">
-              <Link href={routes.internships}>Enroll now</Link>
+              <Link href={enrollHref}>Enroll now</Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
               <Link href={accountHref ?? routes.login}>{accountHref ? "Dashboard" : "Log in"}</Link>

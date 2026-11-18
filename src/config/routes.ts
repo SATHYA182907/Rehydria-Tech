@@ -9,6 +9,8 @@ export const routes = {
   faq: "/faq",
   login: "/login",
   register: "/register",
+  /** Enroll entry point: sign up (or sign in) first, then choose a program. */
+  enroll: (signedIn: boolean) => (signedIn ? "/internships" : `/register?next=${encodeURIComponent("/internships")}`),
   verify: (certificateId: string) => `/verify/${certificateId}`,
   dashboard: {
     root: "/dashboard",
