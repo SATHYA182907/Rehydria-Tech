@@ -30,7 +30,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
           <span className="lg:hidden">
             <Logo />
           </span>
-          <Link href="/" className="rounded-xs text-sm text-ink-soft transition-colors hover:text-ink">
+          <Link href="/" className="inline-flex min-h-11 items-center rounded-xs text-sm text-ink-soft transition-colors hover:text-ink">
             ← Back to site
           </Link>
         </div>

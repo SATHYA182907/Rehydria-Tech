@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils/cn";
 
 /** Shared control styling for inputs, textareas and select triggers. */
 export const controlClass = cn(
-  "w-full rounded-sm border border-line-strong bg-surface px-3.5 text-[15px] text-ink shadow-xs",
+  "w-full rounded-sm border border-line-strong bg-surface px-3.5 text-base text-ink shadow-xs sm:text-[15px]",
   "placeholder:text-mute",
   "transition-[border-color,box-shadow] duration-200",
   "hover:border-ink-soft/50",

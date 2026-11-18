@@ -12,6 +12,9 @@ import { useGSAP } from "@gsap/react";
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, SplitText, useGSAP);
   gsap.defaults({ ease: "expo.out", duration: 1 });
+  // Phones fire resize events when the address bar shows/hides while scrolling. Ignoring
+  // them avoids re-measuring every trigger mid-scroll (a common source of mobile jank).
+  ScrollTrigger.config({ ignoreMobileResize: true });
 }
 
 /** Media queries used with gsap.matchMedia(); keep in sync with docs/DESIGN_SYSTEM.md §6. */

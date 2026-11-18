@@ -70,6 +70,7 @@
   html {
     color-scheme: light;
     -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -207,4 +208,13 @@ html[data-intro="skip"] .preloader { display: none; }
 .group:hover .bento-wire, .group:focus-within .bento-wire { stroke-dashoffset: 0; }
 @media (prefers-reduced-motion: reduce) {
   .bento-wire { stroke-dashoffset: 0; }
+}
+
+/* Hero showcase: touch / small screens get a gentle CSS-only float (desktop uses GSAP). */
+@keyframes showcase-float { 50% { translate: 0 -6px; } }
+@media (max-width: 1023px), (pointer: coarse) {
+  .showcase-float { animation: showcase-float 5s ease-in-out infinite; }
+  .showcase-float--slow { animation-duration: 7s; animation-delay: -2s; }
+  /* Large blurred layers are costly on mobile GPUs: keep them static there. */
+  .aurora-blob { animation: none; }
 }

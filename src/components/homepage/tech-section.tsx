@@ -38,7 +38,7 @@ export function TechSection({ courses, upcoming }: { courses: CourseCard[]; upco
   const taught = Array.from(new Set(courses.flatMap((c) => c.tags)));
 
   return (
-    <section aria-labelledby="tech-title" className="relative overflow-hidden bg-forest-deep py-[clamp(96px,12vw,180px)] text-on-forest">
+    <section aria-labelledby="tech-title" className="relative overflow-hidden bg-forest-deep py-[clamp(72px,12vw,180px)] text-on-forest">
       {/* Oscilloscope trace */}
       <svg aria-hidden="true" viewBox="0 0 1200 200" preserveAspectRatio="none" className="absolute inset-x-0 top-1/2 h-48 w-full -translate-y-1/2 opacity-30">
         <path

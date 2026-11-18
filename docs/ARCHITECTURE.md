@@ -85,7 +85,6 @@ decision changes, update this file in the same change.
 | Animation | `gsap` + `@gsap/react` (`useGSAP`), `ScrollTrigger`, `SplitText` | 3.15 | All GSAP plugins are free since 3.13 |
 | Smooth scroll | `lenis` | 1.3 | Driven by GSAP ticker (see §6) |
 | Component motion | `motion` | 14 | Layout/presence animations in dashboards & modals |
-| 3D (hero only) | `@react-three/fiber` + `three` | 9 / 0.187 | Added in Phase 3, dynamically imported, desktop-only |
 | Auth/DB/Storage | `firebase` (client, auth+app-check only), `firebase-admin` | 13 / 14 | |
 | Functions | `firebase-functions` v2 API | 7.x | Separate workspace package `functions/` |
 | Payments | `razorpay` (server SDK) + Checkout.js | 2.9 | |
@@ -232,9 +231,11 @@ rehydria/
   and Lenis is not started.
 - **Device tiers.** Lenis runs only for fine pointers (it does not smooth touch input). The
   preloader and choreographed hero entrance run only on desktops with a fine pointer, once per
-  session; phones/tablets paint the hero immediately so the headline is the LCP element. The
-  three.js hero scene loads only on capable desktops, after the intro, when the browser is idle,
-  and pauses rendering offscreen.
+  session; phones/tablets paint the hero immediately so the headline is the LCP element. The hero
+  visual is a DOM/CSS "learning journey" showcase (no WebGL), so phones download no 3D code.
+- **Mobile.** Inputs are 16px on phones (no iOS focus zoom), `viewport-fit=cover` with safe-area
+  padding on sticky bars, ScrollTrigger ignores address-bar resizes, large blurred layers are static
+  on touch devices, and course pages show a sticky price + Enroll bar.
 - **Deferred setup.** Below-the-fold animations initialise via `whenNear()` (`src/lib/when-near.ts`,
   IntersectionObserver) instead of during hydration, keeping Total Blocking Time low.
 - Plugins (`ScrollTrigger`, `SplitText`) are registered once in `src/lib/gsap.ts`, which is

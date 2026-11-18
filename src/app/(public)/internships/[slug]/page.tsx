@@ -223,6 +223,24 @@ async function CourseContent({ params }: { params: PageProps<"/internships/[slug
       </Section>
 
       <FaqSection />
+
+      {/* Phones: the price card sits far down the page, so keep the main action in reach. */}
+      <div aria-hidden="true" className="h-20 lg:hidden" />
+      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 border-t border-line bg-canvas/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:hidden">
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-sm text-ink-soft">{course.title}</span>
+          <Price amountPaise={course.pricePaise} compareAtPaise={course.compareAtPricePaise} size="sm" />
+        </div>
+        {course.enrollmentOpen ? (
+          <Button asChild className="shrink-0">
+            <Link href={`${routes.internship(course.slug)}/enroll`}>Enroll now</Link>
+          </Button>
+        ) : (
+          <Button className="shrink-0" disabled>
+            Opens soon
+          </Button>
+        )}
+      </div>
     </main>
   );
 }

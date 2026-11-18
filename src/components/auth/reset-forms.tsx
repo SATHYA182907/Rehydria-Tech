@@ -58,7 +58,7 @@ export function ResetRequestForm() {
       <Button type="submit" size="lg" loading={formState.isSubmitting}>
         Send reset link
       </Button>
-      <Link href="/login" className="text-center text-sm text-moss-text hover:underline">
+      <Link href="/login" className="inline-flex min-h-11 items-center justify-center text-sm text-moss-text hover:underline">
         Back to log in
       </Link>
     </form>

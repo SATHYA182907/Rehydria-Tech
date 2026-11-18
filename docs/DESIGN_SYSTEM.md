@@ -162,7 +162,7 @@ Each section has its own composition, so the page does not repeat one layout:
 | # | Section | Layout | Signature |
 |---|---|---|---|
 | 1 | Navbar | Floating glass pill, centered | Shrinks and gains a hairline on scroll |
-| 2 | Hero | Full-bleed, headline bottom-left at display-xl, visual right | Preloader handoff, circuit canvas, aurora |
+| 2 | Hero | Split: headline + CTAs left, "learning journey" showcase right (program progress, verified certificate, assessment). Phones: copy first, two-card showcase below | Preloader handoff, pointer parallax + idle float (desktop), CSS float (touch) |
 | 3 | Company intro | Huge statement paragraph across 10 cols | Scrubbed word-opacity reveal |
 | 4 | Stats | 4-up mono numbers on forest island | Count-up + trace underline |
 | 5 | Internship programs | Pinned horizontal track of large course cards | Tilt + cursor "View" |

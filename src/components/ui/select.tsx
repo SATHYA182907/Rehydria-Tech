@@ -57,7 +57,7 @@ export function SelectItem({ className, children, ...props }: ComponentProps<typ
   return (
     <SelectPrimitive.Item
       className={cn(
-        "relative flex cursor-default items-center rounded-xs py-2 pr-8 pl-2.5 text-[15px] outline-none select-none",
+        "relative flex min-h-10 cursor-default items-center rounded-xs py-2 pr-8 pl-2.5 text-base outline-none select-none sm:min-h-0 sm:text-[15px]",
         "data-[highlighted]:bg-mint-soft data-[highlighted]:text-forest data-[disabled]:opacity-50",
         className,
       )}

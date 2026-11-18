@@ -53,8 +53,8 @@ export function LoginForm() {
         <Field label="Password" error={formState.errors.password?.message}>
           <Input type="password" autoComplete="current-password" {...register("password")} />
         </Field>
-        <div className="-mt-2 flex justify-end">
-          <Link href="/reset-password" className="text-sm text-moss-text hover:underline">
+        <div className="-my-2 flex justify-end">
+          <Link href="/reset-password" className="inline-flex min-h-11 items-center text-sm text-moss-text hover:underline">
             Forgot password?
           </Link>
         </div>

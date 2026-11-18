@@ -51,7 +51,7 @@ export default async function HomePage() {
     <main>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <Preloader />
-      <Hero />
+      <Hero program={courses[0] ? { title: courses[0].title, code: courses[0].code } : null} />
       <IntroSection />
       <StatsSection courses={courses} stats={stats} />
       <ProgramsSection courses={courses} upcoming={roadmapTopics} />

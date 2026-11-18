@@ -26,8 +26,8 @@ export function Section({ tone = "canvas", spacing = "default", className, ...pr
       className={cn(
         "relative",
         TONES[tone],
-        spacing === "default" && "py-[clamp(96px,12vw,200px)]",
-        spacing === "compact" && "py-[clamp(64px,8vw,120px)]",
+        spacing === "default" && "py-[clamp(72px,12vw,200px)]",
+        spacing === "compact" && "py-[clamp(56px,8vw,120px)]",
         className,
       )}
       {...props}

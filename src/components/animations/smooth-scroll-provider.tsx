@@ -2,7 +2,7 @@
 
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
-import { createContext, Suspense, use, useEffect, useState, type ReactNode } from "react";
+import { createContext, Suspense, use, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
 
@@ -70,10 +70,17 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** New route: jump to top immediately and recompute triggers for the new DOM. */
+/**
+ * Client-side navigation: jump to top and recompute triggers for the new DOM. Skipped on the
+ * initial load, where ScrollTrigger's own load handling already measures; a forced refresh
+ * there is a full-page layout pass that costs hundreds of ms on mid-range phones.
+ */
 function RouteChangeReset({ lenis }: { lenis: Lenis | null }) {
   const pathname = usePathname();
+  const previous = useRef(pathname);
   useEffect(() => {
+    if (previous.current === pathname) return;
+    previous.current = pathname;
     lenis?.scrollTo(0, { immediate: true, force: true });
     const id = requestAnimationFrame(() => ScrollTrigger.refresh());
     return () => cancelAnimationFrame(id);

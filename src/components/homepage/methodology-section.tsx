@@ -47,7 +47,7 @@ export function MethodologySection() {
   );
 
   return (
-    <section ref={rootRef} aria-labelledby="method-title" className="relative bg-canvas py-[clamp(96px,12vw,200px)]">
+    <section ref={rootRef} aria-labelledby="method-title" className="relative bg-canvas py-[clamp(72px,12vw,200px)]">
       <Container className="grid gap-14 lg:grid-cols-12">
         <div className="lg:col-span-5">
           <div className="flex flex-col gap-6 lg:sticky lg:top-32">

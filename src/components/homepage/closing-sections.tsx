@@ -97,7 +97,7 @@ export function FaqSection() {
 
 export function FinalCtaSection() {
   return (
-    <section aria-labelledby="cta-title" className="relative isolate overflow-hidden bg-canvas py-[clamp(120px,16vw,240px)]">
+    <section aria-labelledby="cta-title" className="relative isolate overflow-hidden bg-canvas py-[clamp(88px,16vw,240px)]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
         <div className="aurora-blob absolute top-[10%] left-[20%] size-[50vw] max-w-[760px] rounded-full bg-mint/50 blur-[120px]" />
         <div className="aurora-blob aurora-blob--slow absolute right-[5%] bottom-0 size-[36vw] max-w-[560px] rounded-full bg-moss/20 blur-[120px]" />
@@ -113,15 +113,15 @@ export function FinalCtaSection() {
         <p className="max-w-[46ch] text-lg leading-relaxed text-ink-soft">
           Choose a program, start learning today and earn a certificate you can prove.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Magnetic strength={0.45}>
-            <Button asChild size="lg" data-cursor="">
+        <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-center">
+          <Magnetic strength={0.45} className="w-full sm:w-auto">
+            <Button asChild size="lg" data-cursor="" className="w-full sm:w-auto">
               <Link href={routes.internships}>
                 Explore Internships <ArrowRight aria-hidden="true" />
               </Link>
             </Button>
           </Magnetic>
-          <Button asChild size="lg" variant="secondary">
+          <Button asChild size="lg" variant="secondary" className="w-full sm:w-auto">
             <Link href={routes.contact}>Talk to us</Link>
           </Button>
         </div>
