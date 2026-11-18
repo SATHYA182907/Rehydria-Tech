@@ -15,12 +15,16 @@
 Production project: **`rehydria-tech`** (web config committed in `.env.production`; it is public by
 design). Still required for the server to work in production:
 
-1. Firebase Console → Authentication → enable **Email/Password** and **Google**; add the Vercel
-   domain(s) under *Authorized domains*.
+1. ✅ Done (2026-11-18): **Email/Password** and **Google** sign-in enabled via the `auth` block in
+   `firebase.json`; authorized domains include `rehydria-tech.vercel.app`. Firestore `(default)`
+   created in `asia-south1` (Standard, delete protection on); rules + indexes deployed.
+   To redeploy auth config: create the git-ignored `firebase.local.json` (a copy of
+   `firebase.json` with the real `supportEmail`) and run
+   `npx -y firebase-tools@latest deploy --only auth --config firebase.local.json --project rehydria-tech`.
 2. Create a service account key (§3) and set `FIREBASE_ADMIN_CLIENT_EMAIL` and
    `FIREBASE_ADMIN_PRIVATE_KEY` in Vercel (Production + Preview). Without these, sign-in returns
    "not available yet" and catalog pages render their empty states.
-3. Create Firestore (asia-south1) and deploy rules + indexes: `pnpm exec firebase deploy --only firestore:rules,firestore:indexes,storage --project rehydria-tech`.
+3. ✅ Done. Firestore rules + indexes are redeployed with: `pnpm exec firebase deploy --only firestore:rules,firestore:indexes,storage --project rehydria-tech`.
 4. Register, then grant yourself admin: `pnpm admin:grant you@example.com` (with the admin env vars in `.env.local`).
 
 ## 1. Create the Firebase projects

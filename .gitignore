@@ -56,3 +56,6 @@ functions/.env.*
 
 # public Firebase web config (no secrets)
 !.env.production
+
+# deploy-time Firebase config containing the support email
+firebase.local.json

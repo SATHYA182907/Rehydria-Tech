@@ -11,16 +11,49 @@
       "source": "functions",
       "codebase": "default",
       "runtime": "nodejs22",
-      "ignore": ["node_modules", ".git", "src", "*.log", "tsconfig.json"],
-      "predeploy": ["pnpm --dir \"$RESOURCE_DIR\" run build"]
+      "ignore": [
+        "node_modules",
+        ".git",
+        "src",
+        "*.log",
+        "tsconfig.json"
+      ],
+      "predeploy": [
+        "pnpm --dir \"$RESOURCE_DIR\" run build"
+      ]
     }
   ],
   "emulators": {
-    "auth": { "port": 9099 },
-    "firestore": { "port": 8080 },
-    "storage": { "port": 9199 },
-    "functions": { "port": 5001 },
-    "ui": { "enabled": true, "port": 4000 },
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "port": 9199
+    },
+    "functions": {
+      "port": 5001
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    },
     "singleProjectMode": true
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Rehydria Technology",
+        "supportEmail": "SET_AT_DEPLOY_TIME",
+        "authorizedRedirectUris": [
+          "https://rehydria-tech.firebaseapp.com/__/auth/handler",
+          "https://rehydria-tech.vercel.app",
+          "http://localhost"
+        ]
+      }
+    }
   }
 }
