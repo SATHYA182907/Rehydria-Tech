@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// PHASE 1 BASELINE: deny all client access.
+// Phase 6 opens read access to `public/**` only (docs/SECURITY_PLAN.md §4).
+// Paid files (course resources, guide PDFs, certificates) stay private permanently and
+// are delivered through short-lived signed URLs issued by the server.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

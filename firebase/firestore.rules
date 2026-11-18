@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// PHASE 1 BASELINE: deny all client access.
+// The application server uses the Admin SDK, which bypasses rules, so this baseline is
+// safe to deploy immediately. Phase 6 replaces it with the scoped read rules designed
+// in docs/SECURITY_PLAN.md §3, together with emulator-based rules tests.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
