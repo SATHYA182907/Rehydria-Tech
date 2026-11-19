@@ -14,7 +14,7 @@ certificates and a Hackathon Guide marketplace for Rehydria Technology Pvt Ltd.
 
 ## Documentation
 
-Start here. These documents describe the actual implementation decisions:
+Start here. These documents describe the actual implementation decision:
 
 1. [Architecture](docs/ARCHITECTURE.md)
 2. [Database schema](docs/DATABASE_SCHEMA.md)
