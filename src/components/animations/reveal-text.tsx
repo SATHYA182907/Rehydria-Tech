@@ -10,6 +10,8 @@ interface RevealTextProps {
   children: ReactNode;
   as?: ElementType;
   className?: string;
+  /** Put ids on the element itself: ids on inner spans get duplicated when lines are split. */
+  id?: string;
   /**
    * lines: masked line slide-up (headings) · words: staggered word rise
    * scrub: words brighten from a muted tone to full colour as you scroll (statements)
@@ -33,6 +35,7 @@ export function RevealText({
   children,
   as: Tag = "div",
   className,
+  id,
   mode = "lines",
   delay = 0,
   immediate = false,
@@ -89,7 +92,7 @@ export function RevealText({
   );
 
   return (
-    <Tag ref={ref} className={className}>
+    <Tag ref={ref} id={id} className={className}>
       {children}
     </Tag>
   );

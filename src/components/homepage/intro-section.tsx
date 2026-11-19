@@ -1,53 +1,34 @@
-import { ArrowUpRight } from "lucide-react";
-import Link from "next/link";
-import { Reveal } from "@/components/animations/reveal";
 import { RevealText } from "@/components/animations/reveal-text";
-import { Container, Eyebrow, Section } from "@/components/layout/section";
-import { introStatement, pillars } from "@/content/home";
+import { WordTicker } from "@/components/animations/word-ticker";
+import { Accent, Container, Eyebrow, Section } from "@/components/layout/section";
+import { introStatement, introTickerWords } from "@/content/home";
+import { StackedPillars } from "./stacked-pillars";
 
-/** Company introduction: a scroll-scrubbed statement and the three service pillars. */
+/**
+ * "Who we are": a compact editorial header with a kinetic word ticker, followed by the
+ * three services as scroll-stacking cards.
+ */
 export function IntroSection() {
   return (
     <Section aria-labelledby="intro-title">
-      <Container className="flex flex-col gap-16 lg:gap-24">
-        <div className="grid gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-2">
+      <Container className="flex flex-col gap-12 md:gap-16">
+        <div className="grid gap-8 lg:grid-cols-12 lg:items-end">
+          <div className="flex flex-col gap-5 lg:col-span-7">
             <Eyebrow>01 — Who we are</Eyebrow>
+            <RevealText as="h2" id="intro-title" className="max-w-[16ch] text-display-md font-medium">
+              We turn curiosity into <Accent className="text-moss">capability</Accent>.
+            </RevealText>
           </div>
-          <h2 id="intro-title" className="sr-only">
-            About Rehydria Technology
-          </h2>
-          <RevealText
-            as="p"
-            mode="scrub"
-            className="text-[clamp(1.75rem,1.1rem+2.6vw,3.6rem)] leading-[1.12] font-medium tracking-[-0.035em] lg:col-span-10"
-          >
-            {introStatement}
-          </RevealText>
+          <div className="flex flex-col gap-5 lg:col-span-5">
+            <p className="flex items-baseline gap-3 font-mono text-sm uppercase tracking-[0.14em] text-ink-soft">
+              <span aria-hidden="true" className="h-px w-8 translate-y-[-0.3em] bg-moss" />
+              <span className="sr-only">Our focus: </span>
+              <WordTicker words={introTickerWords} className="font-sans text-2xl font-medium tracking-[-0.02em] text-moss-text normal-case sm:text-3xl" />
+            </p>
+            <p className="max-w-[52ch] text-base leading-relaxed text-ink-soft md:text-lg">{introStatement}</p>
+          </div>
         </div>
-
-        <Reveal as="ul" className="grid gap-px overflow-hidden rounded-md border border-line bg-line md:grid-cols-3">
-          {pillars.map((pillar, i) => (
-            <li key={pillar.title} className="bg-canvas">
-              <Link
-                href={pillar.href}
-                className="group flex h-full flex-col gap-10 p-6 transition-colors duration-300 hover:bg-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-moss md:p-8"
-              >
-                <div className="flex items-center justify-between font-mono text-xs text-ink-soft">
-                  <span>{String(i + 1).padStart(2, "0")}</span>
-                  <ArrowUpRight
-                    aria-hidden="true"
-                    className="size-4 text-ink-soft transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-moss"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-xl font-medium tracking-tight">{pillar.title}</h3>
-                  <p className="leading-relaxed text-ink-soft">{pillar.body}</p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </Reveal>
+        <StackedPillars />
       </Container>
     </Section>
   );

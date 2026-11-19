@@ -105,10 +105,8 @@ export function FinalCtaSection() {
       </div>
       <Container className="flex flex-col items-center gap-10 text-center">
         <Eyebrow>Learn. Innovate. Build the Future.</Eyebrow>
-        <RevealText as="h2" className="max-w-[14ch] text-display-lg font-medium">
-          <span id="cta-title">
-            Build the future, one <Accent className="text-moss">project</Accent> at a time.
-          </span>
+        <RevealText as="h2" id="cta-title" className="max-w-[14ch] text-display-lg font-medium">
+          Build the future, one <Accent className="text-moss">project</Accent> at a time.
         </RevealText>
         <p className="max-w-[46ch] text-lg leading-relaxed text-ink-soft">
           Choose a program, start learning today and earn a certificate you can prove.

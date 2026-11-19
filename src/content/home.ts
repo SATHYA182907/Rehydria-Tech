@@ -13,10 +13,34 @@ export const introStatement =
   "Rehydria Technology is a technology-focused company offering technical internship programs, practical learning experiences, hackathon preparation resources and professional development opportunities.";
 
 export const pillars = [
-  { title: "Technical internships", body: "Structured programs that build skills module by module.", href: "/internships" },
-  { title: "Practical learning", body: "Video lessons, notes and assignments built around real components.", href: "/internships" },
-  { title: "Hackathon guidance", body: "A focused guide for ideating, building and pitching under a deadline.", href: "/hackathon-guide" },
+  {
+    title: "Technical internships",
+    body: "Structured programs that take you from fundamentals to a finished project, module by module.",
+    points: ["Clear modules and objectives", "Online assessment", "Verifiable certificate"],
+    href: "/internships",
+    cta: "Explore internships",
+    motif: "board",
+  },
+  {
+    title: "Practical learning",
+    body: "Video lessons, notes and assignments built around real components, so every concept turns into something you can build.",
+    points: ["Video lessons and notes", "Hands-on assignments", "Progress saved as you go"],
+    href: "/internships",
+    cta: "See how you learn",
+    motif: "network",
+  },
+  {
+    title: "Hackathon guidance",
+    body: "A focused guide for ideating, planning, building and pitching when the clock is running.",
+    points: ["Pick the right problem", "Plan the build", "Pitch with confidence"],
+    href: "/hackathon-guide",
+    cta: "Get the guide",
+    motif: "wave",
+  },
 ] as const;
+
+/** Words cycled in the "Who we are" ticker. */
+export const introTickerWords = ["Learn", "Build", "Innovate", "Compete"] as const;
 
 export const methodology = [
   {
