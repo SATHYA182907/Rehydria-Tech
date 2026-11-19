@@ -1,5 +1,6 @@
 import "server-only";
 import { getAuth, type DecodedIdToken } from "firebase-admin/auth";
+import { connection } from "next/server";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
@@ -40,6 +41,8 @@ function toSessionUser(decoded: DecodedIdToken): SessionUser {
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const cookie = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
   if (!cookie || !isFirebaseConfigured()) return null;
+  // Verification reads the clock (token expiry), so it must run at request time.
+  await connection();
   try {
     const decoded = await getAuth(adminApp()).verifySessionCookie(cookie, true);
     return toSessionUser(decoded);

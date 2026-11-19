@@ -50,7 +50,7 @@ async function CourseContent({ params }: { params: PageProps<"/internships/[slug
     name: course.title,
     description: course.shortDescription,
     provider: { "@type": "Organization", name: siteConfig.legalName, sameAs: siteConfig.url },
-    offers: { "@type": "Offer", category: "Paid", price: (course.pricePaise / 100).toFixed(2), priceCurrency: "INR" },
+    ...(course.pricePaise > 0 ? { offers: { "@type": "Offer", category: "Paid", price: (course.pricePaise / 100).toFixed(2), priceCurrency: "INR" } } : {}),
     hasCourseInstance: { "@type": "CourseInstance", courseMode: "Online", courseWorkload: course.durationLabel },
   };
 
@@ -190,7 +190,7 @@ async function CourseContent({ params }: { params: PageProps<"/internships/[slug
               <Price amountPaise={course.pricePaise} compareAtPaise={course.compareAtPricePaise} size="lg" />
               {course.enrollmentOpen ? (
                 <Button asChild size="lg" className="w-full">
-                  <Link href={`${routes.internship(course.slug)}/enroll`}>Enroll now</Link>
+                  <Link href={routes.enroll(course.slug)}>Enroll now</Link>
                 </Button>
               ) : (
                 <Button size="lg" className="w-full" disabled>
@@ -233,7 +233,7 @@ async function CourseContent({ params }: { params: PageProps<"/internships/[slug
         </div>
         {course.enrollmentOpen ? (
           <Button asChild className="shrink-0">
-            <Link href={`${routes.internship(course.slug)}/enroll`}>Enroll now</Link>
+            <Link href={routes.enroll(course.slug)}>Enroll now</Link>
           </Button>
         ) : (
           <Button className="shrink-0" disabled>

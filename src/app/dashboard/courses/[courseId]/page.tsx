@@ -1,18 +1,21 @@
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Circle, ExternalLink, FileText, Lock, PenTool, PlayCircle, Video } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, Clock, FileQuestion, Lock, RotateCcw, Target } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { CompleteLessonButton } from "@/components/dashboard/complete-lesson-button";
-import { EmptyState, Progress } from "@/components/ui/feedback";
+import { CourseIllustration } from "@/components/courses/course-illustration";
+import { LevelPath, type Level } from "@/components/dashboard/level-path";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Markdown } from "@/components/ui/markdown";
-import { isVideoConfigured } from "@/lib/integrations";
+import { EmptyState, ProgressRing } from "@/components/ui/feedback";
+import { routes } from "@/config/routes";
 import { cn } from "@/lib/utils/cn";
 import { requireUser } from "@/services/auth/session";
-import { getCoursePlayer, getLessonView } from "@/services/student";
+import { getCourseAssessmentState, getCoursePlayer, getLessonLinks } from "@/services/student";
 
-const TYPE_ICON = { video: PlayCircle, reading: FileText, assignment: PenTool, resource: BookOpen } as const;
+export const metadata: Metadata = { title: "Course" };
+
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 
-export default async function CoursePlayerPage({ params, searchParams }: PageProps<"/dashboard/courses/[courseId]">) {
+export default async function CoursePage({ params }: PageProps<"/dashboard/courses/[courseId]">) {
   const { courseId } = await params;
   const user = await requireUser(`/dashboard/courses/${courseId}`);
   const player = ID.test(courseId) ? await getCoursePlayer(user.uid, courseId) : null;
@@ -22,143 +25,169 @@ export default async function CoursePlayerPage({ params, searchParams }: PagePro
       <EmptyState
         icon={<Lock aria-hidden="true" />}
         title="You don't have access to this course"
-        description="This course isn't part of your active enrollments. If you've just paid, it can take a moment to activate."
-        action={<Button asChild><Link href="/dashboard/courses">Go to my courses</Link></Button>}
+        description="This course isn't part of your active enrollments yet. It unlocks once your enrollment is activated."
+        action={
+          <Button asChild>
+            <Link href={routes.dashboard.courses}>Go to my courses</Link>
+          </Button>
+        }
       />
     );
   }
 
-  const lessons = player.modules.flatMap((m) => m.lessons);
-  const requested = (await searchParams).lesson;
-  const requestedId = typeof requested === "string" && ID.test(requested) ? requested : null;
-  const current =
-    lessons.find((l) => l.id === requestedId) ??
-    lessons.find((l) => l.id === player.enrollment.progress.lastLessonId && !l.completed) ??
-    lessons.find((l) => !l.completed) ??
-    lessons[0];
-  const index = current ? lessons.indexOf(current) : -1;
-  const prev = index > 0 ? lessons[index - 1] : null;
-  const next = index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : null;
-  const view = current ? await getLessonView(courseId, current.id) : null;
-  const href = (id: string) => `/dashboard/courses/${courseId}?lesson=${id}`;
-  const Icon = current ? TYPE_ICON[current.type] : PlayCircle;
+  const allLessons = player.modules.flatMap((m) => m.lessons);
+  const [links, exam] = await Promise.all([
+    getLessonLinks(
+      courseId,
+      allLessons.map((l) => l.id),
+    ),
+    getCourseAssessmentState(user.uid, courseId),
+  ]);
+
+  const levels: Level[] = player.modules.map((m) => ({
+    id: m.id,
+    title: m.title,
+    summary: m.summary,
+    lessons: m.lessons.map((l) => {
+      const kind = l.type === "video" ? "video" : "pdf";
+      const link = links[l.id];
+      return {
+        id: l.id,
+        title: l.title,
+        kind,
+        durationMinutes: l.durationMinutes,
+        url: (kind === "video" ? link?.videoUrl : link?.pdfUrl) ?? null,
+        completed: l.completed,
+      };
+    }),
+  }));
+
+  const { enrollment } = player;
+  const percent = enrollment.progress.percent;
+  const levelsDone = levels.filter((l) => l.lessons.length > 0 && l.lessons.every((x) => x.completed)).length;
+  const examUnlocked = percent >= 100;
+  const attemptsLeft = Math.max(0, exam.maxAttempts - exam.attemptsUsed);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3">
-        <Link href="/dashboard/courses" className="flex w-fit items-center gap-1.5 text-sm text-ink-soft hover:text-ink">
-          <ArrowLeft aria-hidden="true" className="size-4" /> My courses
-        </Link>
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <h1 className="text-3xl font-medium tracking-[-0.03em]">{player.enrollment.title}</h1>
-          <div className="w-full md:w-72">
-            <Progress value={player.enrollment.progress.percent} showValue label="Course progress" />
+    <div className="flex flex-col gap-8">
+      <Link href={routes.dashboard.courses} className="flex min-h-11 w-fit items-center gap-1.5 text-sm text-ink-soft hover:text-ink">
+        <ArrowLeft aria-hidden="true" className="size-4" /> My courses
+      </Link>
+
+      {/* Course header with the completion circle */}
+      <header className="relative overflow-hidden rounded-md bg-forest p-6 text-on-forest shadow-float md:p-10">
+        <div aria-hidden="true" className="absolute inset-0 [background-image:radial-gradient(rgb(184_228_201/0.14)_1px,transparent_1px)] [background-size:22px_22px]" />
+        <div aria-hidden="true" className="pointer-events-none absolute -top-8 -right-8 w-72 text-mint opacity-20 md:w-96">
+          <CourseIllustration motif={enrollment.illustration} />
+        </div>
+        <div className="relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <div className="flex max-w-xl flex-col gap-3">
+            <span className="font-mono text-xs tracking-[0.16em] text-mint">{enrollment.code}</span>
+            <h1 className="text-[clamp(1.75rem,1.3rem+2vw,2.75rem)] leading-[1.05] font-medium tracking-[-0.03em]">{enrollment.title}</h1>
+            <p className="text-on-forest-soft">Complete all 4 levels to unlock the final assessment. Pass it to earn your certificate.</p>
+            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <BookOpen aria-hidden="true" className="size-4 text-mint" />
+                <dt className="sr-only">Levels</dt>
+                <dd>
+                  {levelsDone} of {levels.length} levels
+                </dd>
+              </div>
+              <div className="flex items-center gap-2">
+                <Target aria-hidden="true" className="size-4 text-mint" />
+                <dt className="sr-only">Lessons</dt>
+                <dd>
+                  {enrollment.progress.completedLessons} of {enrollment.progress.requiredLessons} lessons
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div className="flex shrink-0 items-center gap-4 self-start rounded-md bg-white/5 p-4 ring-1 ring-white/10 backdrop-blur md:self-auto">
+            <ProgressRing value={percent} size={128} stroke={10} label="Total course completion" className="[&_circle:first-child]:stroke-white/15 [&_circle:last-child]:stroke-mint">
+              <span className="flex flex-col items-center leading-none">
+                <span className="text-3xl font-medium text-white">{percent}%</span>
+                <span className="mt-1 text-[10px] tracking-[0.14em] text-on-forest-soft uppercase">complete</span>
+              </span>
+            </ProgressRing>
           </div>
         </div>
-      </div>
+      </header>
 
-      {lessons.length === 0 ? (
-        <EmptyState icon={<BookOpen aria-hidden="true" />} title="Lessons are being published" description="The lessons for this course will appear here soon." />
+      {levels.length === 0 ? (
+        <EmptyState icon={<BookOpen aria-hidden="true" />} title="Levels are being published" description="The course levels will appear here soon." />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <article className="flex min-w-0 flex-col gap-6">
-            <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-md bg-forest-deep text-on-forest">
-              <div aria-hidden="true" className="absolute inset-0 [background-image:radial-gradient(rgb(184_228_201/0.12)_1px,transparent_1px)] [background-size:22px_22px]" />
-              <div className="relative flex max-w-sm flex-col items-center gap-3 px-6 text-center">
-                {current?.type === "video" ? <Video aria-hidden="true" className="size-10 text-mint" /> : <Icon aria-hidden="true" className="size-10 text-mint" />}
-                <p className="text-lg font-medium">
-                  {current?.type !== "video"
-                    ? "This lesson is a reading / activity"
-                    : view?.hasVideo && isVideoConfigured()
-                      ? "Secure video player"
-                      : "The video for this lesson is being uploaded"}
-                </p>
-                <p className="text-sm text-on-forest-soft">
-                  {current?.type === "video" && !(view?.hasVideo && isVideoConfigured())
-                    ? "You can still read the notes below and mark the lesson complete when you're done."
-                    : "Notes and resources are below."}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-5 rounded-md border border-line bg-surface p-6 md:p-8">
-              <div className="flex flex-col gap-2">
-                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-moss-text">
-                  Lesson {index + 1} of {lessons.length}
-                </p>
-                <h2 className="text-2xl font-medium tracking-tight">{current?.title}</h2>
-              </div>
-              {view?.bodyMarkdown ? <Markdown source={view.bodyMarkdown} /> : <p className="text-ink-soft">Lesson notes will appear here.</p>}
-              {view?.assignment && (
-                <div className="flex flex-col gap-2 rounded-sm bg-canvas-2 p-5">
-                  <p className="flex items-center gap-2 font-medium"><PenTool aria-hidden="true" className="size-4 text-moss" /> Assignment</p>
-                  <p className="text-ink-soft">{view.assignment.instructions}</p>
-                </div>
-              )}
-              {view && view.resources.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <p className="font-medium">Resources</p>
-                  <ul className="flex flex-col divide-y divide-line rounded-sm border border-line">
-                    {view.resources.map((r) => (
-                      <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                        <span className="flex items-center gap-2"><FileText aria-hidden="true" className="size-4 text-moss" /> {r.title}</span>
-                        {r.url ? (
-                          <a href={r.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm text-moss-text hover:underline">
-                            Open <ExternalLink aria-hidden="true" className="size-3.5" />
-                          </a>
-                        ) : (
-                          <span className="text-sm text-ink-soft">Download available soon</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
-                <div className="flex gap-2">
-                  {prev && (
-                    <Button asChild variant="secondary" size="sm">
-                      <Link href={href(prev.id)}><ArrowLeft aria-hidden="true" /> Previous</Link>
-                    </Button>
-                  )}
-                  {next && (
-                    <Button asChild variant="secondary" size="sm">
-                      <Link href={href(next.id)}>Next <ArrowRight aria-hidden="true" /></Link>
-                    </Button>
-                  )}
-                </div>
-                {current && <CompleteLessonButton courseId={courseId} lessonId={current.id} completed={current.completed} nextHref={next ? href(next.id) : null} />}
-              </div>
-            </div>
-          </article>
-
-          <aside aria-label="Course contents" className="flex flex-col gap-4 lg:sticky lg:top-24 lg:max-h-[calc(100svh-7rem)] lg:overflow-y-auto">
-            {player.modules.map((m) => (
-              <div key={m.id} className="rounded-md border border-line bg-surface">
-                <p className="border-b border-line px-4 py-3 text-sm font-medium">{m.title}</p>
-                <ol>
-                  {m.lessons.map((l) => {
-                    const active = l.id === current?.id;
-                    return (
-                      <li key={l.id}>
-                        <Link
-                          href={href(l.id)}
-                          aria-current={active ? "true" : undefined}
-                          className={cn("flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-canvas-2", active && "bg-mint-soft text-forest")}
-                        >
-                          {l.completed ? <CheckCircle2 aria-label="Completed" className="size-4 shrink-0 text-moss" /> : <Circle aria-hidden="true" className="size-4 shrink-0 text-line-strong" />}
-                          <span className="flex-1">{l.title}</span>
-                          {l.durationMinutes ? <span className="font-mono text-[11px] text-ink-soft">{l.durationMinutes}m</span> : null}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </div>
-            ))}
-          </aside>
-        </div>
+        <section aria-labelledby="levels-title" className="flex flex-col gap-4">
+          <h2 id="levels-title" className="text-xl font-medium">
+            Course content
+          </h2>
+          <LevelPath courseId={courseId} levels={levels} />
+        </section>
       )}
+
+      {/* Final assessment */}
+      <section
+        aria-labelledby="exam-title"
+        className={cn(
+          "relative overflow-hidden rounded-md border p-6 md:p-8",
+          exam.passed ? "border-moss/40 bg-mint-soft" : examUnlocked ? "border-moss/40 bg-surface shadow-float" : "border-dashed border-line-strong bg-canvas-2",
+        )}
+      >
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-4">
+            <span className={cn("flex size-14 shrink-0 items-center justify-center rounded-full", examUnlocked ? "bg-forest text-mint" : "bg-surface text-ink-soft")}>
+              {exam.passed ? <Award aria-hidden="true" className="size-6" /> : examUnlocked ? <FileQuestion aria-hidden="true" className="size-6" /> : <Lock aria-hidden="true" className="size-6" />}
+            </span>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 id="exam-title" className="text-xl font-medium tracking-tight">
+                  Final assessment
+                </h2>
+                {exam.passed ? <Badge variant="success">Passed</Badge> : !examUnlocked ? <Badge variant="neutral">Locked</Badge> : null}
+              </div>
+              <ul className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-soft">
+                <li className="flex items-center gap-1.5">
+                  <FileQuestion aria-hidden="true" className="size-4" /> {exam.questionCount} MCQs
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <Clock aria-hidden="true" className="size-4" /> {exam.durationMinutes} minutes
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <Target aria-hidden="true" className="size-4" /> Pass mark {exam.passingPercent}%
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <RotateCcw aria-hidden="true" className="size-4" /> {attemptsLeft} of {exam.maxAttempts} attempts left
+                </li>
+              </ul>
+              {exam.bestResult && (
+                <p className="text-sm">
+                  Best result: <strong className="font-medium">{exam.bestResult.correct}/{exam.bestResult.total}</strong> ({exam.bestResult.percent}%), grade{" "}
+                  <strong className="font-medium">{exam.bestResult.grade}</strong>
+                </p>
+              )}
+              {!examUnlocked && <p className="text-sm text-ink-soft">Complete every level to unlock the assessment ({percent}% done).</p>}
+            </div>
+          </div>
+          <div className="shrink-0">
+            {exam.passed ? (
+              <Button asChild>
+                <Link href={routes.dashboard.certificates}>
+                  View certificate <Award aria-hidden="true" />
+                </Link>
+              </Button>
+            ) : examUnlocked && exam.published && (attemptsLeft > 0 || exam.inProgressAttemptId) ? (
+              <Button asChild>
+                <Link href={routes.dashboard.assessment(courseId)}>
+                  {exam.inProgressAttemptId ? "Resume assessment" : "Start assessment"} <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+            ) : examUnlocked && attemptsLeft === 0 ? (
+              <p className="max-w-xs text-sm text-ink-soft">You have used all attempts. Contact Rehydria support for a re-attempt.</p>
+            ) : examUnlocked ? (
+              <p className="max-w-xs text-sm text-ink-soft">The assessment opens soon.</p>
+            ) : null}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

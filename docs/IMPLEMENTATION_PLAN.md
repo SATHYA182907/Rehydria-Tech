@@ -27,20 +27,23 @@
 | Admin | Overview stats, CRUD for everything, exports, announcements | All of the above |
 | Email | 10 branded templates, retries, non-blocking | Resend, functions |
 
-## Status: all pages built (2026-11-18)
+## Status: learning flow live (2026-11-19)
 
 Every route in the specification exists, wired to real data:
 
 | Area | Routes | State |
 |---|---|---|
-| Public | `/`, `/about`, `/internships`, `/internships/[slug]`, `/internships/[slug]/enroll`, `/hackathon-guide`, `/contact`, `/faq`, `/legal/[policy]`, `/verify`, `/verify/[certificateId]`, 404, sitemap, robots, OG image | Live. Enrollment and guide purchase show "opens soon" until Razorpay keys exist; legal pages await Rehydria's policy text |
+| Public | `/`, `/about`, `/internships`, `/internships/[slug]`, `/enroll` (account + application), `/enroll/payment` (placeholder until Razorpay), `/hackathon-guide`, `/contact`, `/faq`, `/legal/[policy]`, `/verify`, `/verify/[certificateId]`, 404, sitemap, robots, OG image | Live. Enrollment and guide purchase show "opens soon" until Razorpay keys exist; legal pages await Rehydria's policy text |
 | Auth | `/login`, `/register`, `/reset-password`, `/account/action` | Live: email/password + Google, httpOnly session cookies, rate-limited |
-| Student | `/dashboard`, `/courses`, `/courses/[courseId]`, `/materials`, `/assessments`, `/results`, `/certificates`, `/profile` | Live: enrollment-gated course player with lesson completion and progress, profile editing. Exam engine (Phase 9), PDF downloads (Phase 10) and video (Bunny) pending |
-| Admin | `/admin` + 12 sections + `/admin/courses/new`, `/admin/courses/[id]` | Live: overview, searchable/filterable tables for every collection, course create/edit, company settings. Module/lesson/question/product editors come with course content entry |
+| Student | Sidebar: Courses, Certificates, Settings. `/dashboard/courses`, `/dashboard/courses/[courseId]` (4 sequential levels, video + PDF per level, completion ring), `/dashboard/courses/[courseId]/assessment` (25 MCQ / 30 min exam), `/dashboard/certificates` (locked → unlocked), `/dashboard/settings`, `/certificate/[id]` (print / save as PDF) | Live. Lesson videos/PDFs are links set by admins; generated PDF files + email (Phase 10) pending |
+| Admin | `/admin` + 12 sections + `/admin/courses/new`, `/admin/courses/[id]`, `/admin/questions/new` | Live: overview, tables for every collection, course create/edit, company settings, manual enrollment activation, lesson video/PDF links, question-bank import (plain text) and (de)activation |
 
 Verified end-to-end on the production build against the Firebase emulators (register, login,
 logout, admin grant, admin 404 for students, course creation → public page, lesson completion,
-certificate verification, contact form, enrollment gating, rate limiting).
+certificate verification, contact form, enrollment gating, rate limiting). On 2026-11-19 the full
+learning flow was verified the same way: enroll → payment placeholder → admin activation → 4
+levels → exam (answers survive a reload) → A+ result → certificate unlocked → print/PDF →
+public verify, plus phone layout (no horizontal overflow).
 
 ## Roadmap
 
@@ -111,12 +114,16 @@ certificate verification, contact form, enrollment gating, rate limiting).
   (modules accordion, Bunny player, notes, resources), materials, profile
 - Progress tracking, resume learning, completion computation, secure downloads
 
-### Phase 9: MCQ assessment engine
-- Start/save/submit actions, exam UI (one question at a time, navigator, timer, auto-submit),
-  results page, `expireAssessmentAttempts` function, grading tests
+### Phase 9: MCQ assessment engine (done)
+- Start/save/submit Server Actions (`src/services/assessments`), exam UI (one question at a
+  time, navigator, timer, auto-submit, confirm dialog), animated result screen, grading tests.
+  Expired attempts are auto-submitted lazily when the student next opens the assessment (the
+  scheduled `expireAssessmentAttempts` function remains optional).
 
 ### Phase 10: Certificates & email
-- `renderCertificate` function (pdf-lib, QR → `/verify/[id]`), certificate email,
+- Done: certificate issued (status `valid`) in the grading transaction on a pass; animated
+  unlock on `/dashboard/certificates`; print-ready `/certificate/[id]`; `/verify/[id]`
+- Pending: `renderCertificate` function (pdf-lib, QR → `/verify/[id]`), certificate email,
   `/verify/[certificateId]` page, dashboard certificates, all 10 email templates
 
 ### Phase 11: Hackathon guide purchasing

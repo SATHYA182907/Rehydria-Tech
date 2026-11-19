@@ -34,7 +34,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
             ← Back to site
           </Link>
         </div>
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-12">{children}</div>
+        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center py-12">{children}</div>
       </main>
     </div>
   );

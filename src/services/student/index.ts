@@ -247,7 +247,10 @@ export async function getStudentResults(uid: string): Promise<StudentResult[]> {
 
 export interface StudentCertificate {
   id: string;
+  courseId: string;
   courseTitle: string;
+  studentName: string;
+  directorName: string;
   grade: string;
   status: "pending" | "valid" | "revoked" | "failed";
   issuedAt: string | null;
@@ -258,7 +261,16 @@ export async function getStudentCertificates(uid: string): Promise<StudentCertif
   return snap.docs
     .map((d) => {
       const c = d.data();
-      return { id: d.id, courseTitle: String(c.courseTitle ?? ""), grade: String(c.grade ?? ""), status: c.status, issuedAt: toIso(c.issuedAt) } as StudentCertificate;
+      return {
+        id: d.id,
+        courseId: String(c.courseId ?? ""),
+        courseTitle: String(c.courseTitle ?? ""),
+        studentName: String(c.studentName ?? ""),
+        directorName: String(c.directorName ?? ""),
+        grade: String(c.grade ?? ""),
+        status: c.status,
+        issuedAt: toIso(c.issuedAt),
+      } as StudentCertificate;
     })
     .sort((a, b) => (b.issuedAt ?? "").localeCompare(a.issuedAt ?? ""));
 }
@@ -287,4 +299,101 @@ export async function getStudentPurchases(uid: string): Promise<StudentPurchase[
       };
     })
     .filter((p) => p.status === "active");
+}
+
+/* ── Applications awaiting payment ───────────────────────────────────────── */
+
+export interface StudentApplication {
+  id: string;
+  courseId: string;
+  title: string;
+  createdAt: string | null;
+}
+
+export async function getStudentApplications(uid: string): Promise<StudentApplication[]> {
+  const snap = await adminDb().collection(COLLECTIONS.enrollments).where("uid", "==", uid).get();
+  return rows(snap)
+    .filter((r) => r.status === "pending_payment")
+    .map((r) => ({
+      id: r.id,
+      courseId: String(r.courseId),
+      title: String((r.courseSnapshot as { title?: string } | undefined)?.title ?? "Course"),
+      createdAt: toIso(r.createdAt),
+    }));
+}
+
+/* ── Course learning view (levels, lesson links, assessment state) ───────── */
+
+export interface LessonLinks {
+  videoUrl: string | null;
+  pdfUrl: string | null;
+}
+
+const SAFE_URL = /^https:\/\/[^\s]+$/;
+
+/**
+ * Video / PDF links for a course's lessons. Caller must have verified an active enrollment.
+ * Only https URLs are returned. (Interim: Bunny Stream signed playback + private PDF
+ * downloads replace raw links once video hosting and Storage are configured.)
+ */
+export async function getLessonLinks(courseId: string, lessonIds: string[]): Promise<Record<string, LessonLinks>> {
+  if (lessonIds.length === 0) return {};
+  const db = adminDb();
+  const snaps = await db.getAll(...lessonIds.map((id) => db.collection(COLLECTIONS.lessons).doc(id).collection(LESSON_PRIVATE_CONTENT.collection).doc(LESSON_PRIVATE_CONTENT.doc)));
+  const out: Record<string, LessonLinks> = {};
+  snaps.forEach((s, i) => {
+    const d = s.data() ?? {};
+    const pick = (v: unknown) => (typeof v === "string" && SAFE_URL.test(v) ? v : null);
+    out[lessonIds[i]!] = { videoUrl: pick(d.videoUrl), pdfUrl: pick(d.pdfUrl) };
+  });
+  return out;
+}
+
+export interface CourseAssessmentState {
+  assessmentId: string | null;
+  title: string;
+  published: boolean;
+  questionCount: number;
+  durationMinutes: number;
+  passingPercent: number;
+  maxAttempts: number;
+  attemptsUsed: number;
+  inProgressAttemptId: string | null;
+  passed: boolean;
+  bestResult: { grade: string; percent: number; correct: number; total: number } | null;
+  certificateId: string | null;
+}
+
+export async function getCourseAssessmentState(uid: string, courseId: string): Promise<CourseAssessmentState> {
+  const db = adminDb();
+  const course = (await db.collection(COLLECTIONS.courses).doc(courseId).get()).data() ?? {};
+  const assessmentId = (course.finalAssessmentId as string | null) ?? null;
+  const a = assessmentId ? (await db.collection(COLLECTIONS.assessments).doc(assessmentId).get()).data() : undefined;
+  const [attemptsSnap, resultsSnap, enrollSnap] = await Promise.all([
+    db.collection(COLLECTIONS.assessmentAttempts).where("uid", "==", uid).get(),
+    db.collection(COLLECTIONS.assessmentResults).where("uid", "==", uid).get(),
+    db.collection(COLLECTIONS.enrollments).where("uid", "==", uid).get(),
+  ]);
+  const attempts = rows(attemptsSnap).filter((r) => r.assessmentId === assessmentId);
+  const nowMs = Date.now();
+  const live = attempts.find((r) => r.status === "in_progress" && Date.parse(toIso(r.expiresAt) ?? "") > nowMs);
+  const results = rows(resultsSnap)
+    .filter((r) => r.courseId === courseId)
+    .sort((x, y) => Number(y.percent ?? 0) - Number(x.percent ?? 0));
+  const best = results[0];
+  const enrollment = rows(enrollSnap).find((r) => r.courseId === courseId);
+  return {
+    assessmentId,
+    title: String(a?.title ?? "Final assessment"),
+    published: a?.status === "published",
+    questionCount: Number(a?.questionCount ?? 25),
+    durationMinutes: Number(a?.durationMinutes ?? 30),
+    passingPercent: Number(a?.passingPercent ?? 40),
+    maxAttempts: Number(a?.maxAttempts ?? 2),
+    attemptsUsed: attempts.filter((r) => r.status !== "in_progress").length,
+    inProgressAttemptId: live?.id ?? null,
+    passed: results.some((r) => r.passed === true),
+    bestResult: best ? { grade: String(best.grade), percent: Number(best.percent), correct: Number(best.correct), total: Number(best.total) } : null,
+    certificateId: (enrollment?.certificateId as string | null) ?? null,
+  };
 }

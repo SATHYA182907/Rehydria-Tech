@@ -9,20 +9,11 @@ export const metadata: Metadata = { title: { default: "Dashboard", template: "%s
 const NAV: ShellNavGroup[] = [
   {
     items: [
-      { label: "Overview", href: "/dashboard", icon: "LayoutDashboard", exact: true },
-      { label: "My courses", href: "/dashboard/courses", icon: "BookOpen" },
-      { label: "Learning materials", href: "/dashboard/materials", icon: "FolderOpen" },
-    ],
-  },
-  {
-    label: "Progress",
-    items: [
-      { label: "Assessments", href: "/dashboard/assessments", icon: "ListChecks" },
-      { label: "Results", href: "/dashboard/results", icon: "BarChart3" },
+      { label: "Courses", href: "/dashboard/courses", icon: "BookOpen" },
       { label: "Certificates", href: "/dashboard/certificates", icon: "Award" },
+      { label: "Settings", href: "/dashboard/settings", icon: "Settings" },
     ],
   },
-  { label: "Account", items: [{ label: "Profile", href: "/dashboard/profile", icon: "UserRound" }] },
 ];
 
 /**

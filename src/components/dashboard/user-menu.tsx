@@ -37,8 +37,8 @@ export function UserMenu({ name, email, isAdmin }: { name: string; email: string
       <DropdownMenuContent>
         <DropdownMenuLabel>{email ?? name}</DropdownMenuLabel>
         <DropdownMenuItem asChild>
-          <Link href="/dashboard">
-            <LayoutDashboard /> Student dashboard
+          <Link href="/dashboard/courses">
+            <LayoutDashboard /> My courses
           </Link>
         </DropdownMenuItem>
         {isAdmin && (
@@ -49,8 +49,8 @@ export function UserMenu({ name, email, isAdmin }: { name: string; email: string
           </DropdownMenuItem>
         )}
         <DropdownMenuItem asChild>
-          <Link href="/dashboard/profile">
-            <UserRound /> Profile
+          <Link href="/dashboard/settings">
+            <UserRound /> Settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

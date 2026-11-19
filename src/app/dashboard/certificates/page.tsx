@@ -1,59 +1,131 @@
-import { Award, ExternalLink } from "lucide-react";
+import { Award, Check, ExternalLink, Lock, Printer } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CertificateDocument } from "@/components/certificates/certificate-document";
+import { CertificateReveal } from "@/components/certificates/certificate-reveal";
 import { DashboardHeader } from "@/components/dashboard/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/feedback";
+import { EmptyState, Progress } from "@/components/ui/feedback";
+import { routes } from "@/config/routes";
+import { cn } from "@/lib/utils/cn";
 import { requireUser } from "@/services/auth/session";
-import { getStudentCertificates } from "@/services/student";
+import { getStudentCertificates, getStudentEnrollments } from "@/services/student";
 
 export const metadata: Metadata = { title: "Certificates" };
 
-const date = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
-const STATUS = {
-  valid: <Badge variant="success">Valid</Badge>,
-  pending: <Badge variant="warning">Being generated</Badge>,
-  revoked: <Badge variant="danger">Revoked</Badge>,
-  failed: <Badge variant="warning">Processing</Badge>,
-} as const;
-
 export default async function CertificatesPage() {
   const user = await requireUser("/dashboard/certificates");
-  const certificates = await getStudentCertificates(user.uid);
+  const [certificates, enrollments] = await Promise.all([getStudentCertificates(user.uid), getStudentEnrollments(user.uid)]);
+  const earned = certificates.filter((c) => c.status === "valid" || c.status === "revoked");
+  const earnedCourses = new Set(earned.map((c) => c.courseId));
+  const locked = enrollments.filter((e) => !earnedCourses.has(e.courseId));
+
   return (
     <>
-      <DashboardHeader eyebrow="Achievements" title="Certificates" description="Certificates are issued automatically when you complete a course and pass its assessment." />
-      {certificates.length === 0 ? (
-        <EmptyState icon={<Award aria-hidden="true" />} title="No certificates yet" description="Complete a course and pass its assessment to earn a verifiable certificate." />
+      <DashboardHeader eyebrow="Achievements" title="Certificates" description="Complete all 4 levels of a course and pass its final assessment to unlock your verifiable certificate." />
+
+      {earned.length === 0 && locked.length === 0 ? (
+        <EmptyState
+          icon={<Award aria-hidden="true" />}
+          title="No certificates yet"
+          description="Enroll in an internship course to start working towards your certificate."
+          action={
+            <Button asChild>
+              <Link href={routes.dashboard.courses}>Go to my courses</Link>
+            </Button>
+          }
+        />
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
-          {certificates.map((c) => (
-            <li key={c.id} className="flex flex-col gap-5 overflow-hidden rounded-md border border-line bg-surface">
-              <div className="flex items-start justify-between gap-4 bg-forest p-6 text-on-forest">
-                <div className="flex flex-col gap-1">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-mint">Certificate of completion</p>
-                  <p className="text-xl font-medium">{c.courseTitle}</p>
-                </div>
-                <Award aria-hidden="true" className="size-8 text-mint" />
-              </div>
-              <dl className="grid grid-cols-2 gap-4 px-6 text-sm">
-                <div><dt className="text-ink-soft">Grade</dt><dd className="text-lg font-medium">{c.grade}</dd></div>
-                <div><dt className="text-ink-soft">Issued</dt><dd className="font-medium">{c.issuedAt ? date.format(new Date(c.issuedAt)) : "-"}</dd></div>
-                <div className="col-span-2"><dt className="text-ink-soft">Certificate ID</dt><dd className="font-mono">{c.id}</dd></div>
-              </dl>
-              <div className="flex items-center justify-between gap-3 border-t border-line px-6 py-4">
-                {STATUS[c.status]}
-                <div className="flex gap-2">
-                  <Button asChild variant="ghost" size="sm">
-                    <Link href={`/verify/${c.id}`}>Verify <ExternalLink aria-hidden="true" /></Link>
-                  </Button>
-                  <Button size="sm" disabled title="PDF downloads are enabled once certificate generation is configured">Download PDF</Button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-12">
+          {earned.length > 0 && (
+            <section aria-labelledby="earned" className="flex flex-col gap-5">
+              <h2 id="earned" className="text-xl font-medium">
+                Unlocked
+              </h2>
+              <ul className={cn("grid gap-10", earned.length === 1 ? "max-w-4xl" : "xl:grid-cols-2")}>
+                {earned.map((c, i) => (
+                  <li key={c.id} className="flex flex-col gap-4">
+                    <CertificateReveal index={i}>
+                      <CertificateDocument cert={c} />
+                    </CertificateReveal>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        {c.status === "valid" ? <Badge variant="success">Valid</Badge> : <Badge variant="danger">Revoked</Badge>}
+                        <span className="font-mono text-xs text-ink-soft">{c.id}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button asChild size="sm" variant="secondary">
+                          <Link href={`/verify/${c.id}`} target="_blank">
+                            Verify <ExternalLink aria-hidden="true" />
+                          </Link>
+                        </Button>
+                        {c.status === "valid" && (
+                          <Button asChild size="sm">
+                            <Link href={`/certificate/${c.id}`} target="_blank">
+                              <Printer aria-hidden="true" /> Download / print
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {locked.length > 0 && (
+            <section aria-labelledby="locked" className="flex flex-col gap-5">
+              <h2 id="locked" className="text-xl font-medium">
+                Locked
+              </h2>
+              <ul className="grid gap-5 md:grid-cols-2">
+                {locked.map((e) => {
+                  const levelsDone = e.progress.percent >= 100;
+                  const steps = [
+                    { label: "Complete all 4 levels", done: levelsDone, detail: `${e.progress.percent}%` },
+                    { label: "Pass the final assessment", done: e.assessmentPassed, detail: levelsDone ? "Unlocked" : "Locked" },
+                  ];
+                  return (
+                    <li key={e.id} className="relative overflow-hidden rounded-md border border-dashed border-line-strong bg-canvas-2 p-6">
+                      {/* Blurred certificate silhouette */}
+                      <div aria-hidden="true" className="pointer-events-none absolute -top-6 -right-10 w-64 rotate-6 opacity-40 blur-[2px] grayscale">
+                        <div className="aspect-[297/210] rounded-sm border-4 border-line-strong bg-surface" />
+                      </div>
+                      <div className="relative flex flex-col gap-5">
+                        <span className="flex size-12 items-center justify-center rounded-full bg-surface text-ink-soft shadow-card">
+                          <Lock aria-hidden="true" className="size-5" />
+                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-mono text-xs text-ink-soft">{e.code}</span>
+                          <h3 className="text-lg font-medium tracking-tight">{e.title}</h3>
+                        </div>
+                        <Progress value={e.progress.percent} showValue label={`${e.title} progress`} />
+                        <ol className="flex flex-col gap-2">
+                          {steps.map((s) => (
+                            <li key={s.label} className="flex items-center gap-3 text-sm">
+                              <span className={cn("flex size-6 items-center justify-center rounded-full", s.done ? "bg-moss text-white" : "bg-surface text-ink-soft ring-1 ring-line")}>
+                                {s.done ? <Check aria-hidden="true" className="size-3.5" /> : <Lock aria-hidden="true" className="size-3" />}
+                              </span>
+                              <span className={cn("flex-1", s.done && "text-ink-soft line-through")}>{s.label}</span>
+                              <span className="font-mono text-xs text-ink-soft">{s.done ? "Done" : s.detail}</span>
+                            </li>
+                          ))}
+                        </ol>
+                        <Button asChild size="sm" className="w-fit">
+                          <Link href={levelsDone ? routes.dashboard.assessment(e.courseId) : routes.dashboard.course(e.courseId)}>
+                            {levelsDone ? "Take the assessment" : "Continue course"}
+                          </Link>
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+        </div>
       )}
     </>
   );

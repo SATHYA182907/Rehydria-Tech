@@ -14,11 +14,12 @@ import { profileSchema } from "@/lib/validations/profile";
 import { updateProfile } from "@/services/student/actions";
 
 type ProfileInput = z.input<typeof profileSchema>;
+type ProfileOutput = z.output<typeof profileSchema>;
 
 export function ProfileForm({ defaults, email }: { defaults: ProfileInput; email: string }) {
-  const { register, control, handleSubmit, formState } = useForm<ProfileInput>({ resolver: zodResolver(profileSchema), defaultValues: defaults, mode: "onTouched" });
-  const onSubmit = handleSubmit(async (values) => {
-    const res = await updateProfile(values);
+  const { register, control, handleSubmit, getValues, formState } = useForm<ProfileInput, unknown, ProfileOutput>({ resolver: zodResolver(profileSchema), defaultValues: defaults, mode: "onTouched" });
+  const onSubmit = handleSubmit(async () => {
+    const res = await updateProfile(getValues());
     if (res.ok) toast.success(res.message ?? "Saved");
     else toast.error(res.error);
   });
@@ -33,7 +34,10 @@ export function ProfileForm({ defaults, email }: { defaults: ProfileInput; email
       <Field label="Mobile number" required error={formState.errors.phone?.message}>
         <PhoneInput {...register("phone")} />
       </Field>
-      <Field label="College or organization" required error={formState.errors.college?.message}>
+      <Field label="Current course (higher education)" required error={formState.errors.degree?.message} description="For example: B.E. Electronics & Communication">
+        <Input {...register("degree")} />
+      </Field>
+      <Field label="College (optional)" error={formState.errors.college?.message}>
         <Input autoComplete="organization" {...register("college")} />
       </Field>
       <Field label="Year of study" required error={formState.errors.yearOfStudy?.message}>

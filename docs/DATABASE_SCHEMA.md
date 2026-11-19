@@ -29,6 +29,7 @@ Types below are the source of truth for `src/shared/types/*.ts`. Timestamps are 
 | phone | string | E.164, `+91XXXXXXXXXX` |
 | role | `"student" \| "admin"` | **Display only.** Authorization uses the custom claim `admin: true` |
 | college | string \| null | |
+| degree | string \| null | Current higher-education course, e.g. "B.E. ECE" (enrollment form) |
 | yearOfStudy | `"1" \| "2" \| "3" \| "4" \| "5" \| "graduate" \| "working" \| "other"` \| null | |
 | profileImage | string \| null | Storage path `users/{uid}/avatar.webp` |
 | accountSetupComplete | boolean | false until a first-time student sets a password |
@@ -123,13 +124,13 @@ This blocks two pending or active enrollments for the same email and course, whe
 | courseSnapshot | `{ title, slug, pricePaise }` | |
 | uid | string \| null | null until associated at fulfilment |
 | email | string | |
-| applicant | `{ fullName, phone, college, yearOfStudy }` | Form data as submitted |
+| applicant | `{ fullName, phone, degree, yearOfStudy }` | Form data as submitted |
 | status | `"pending_payment" \| "active" \| "completed" \| "abandoned" \| "revoked" \| "refunded"` | |
 | currentOrderId | string \| null | Latest Razorpay order |
 | paymentId | string \| null | Razorpay payment id once paid |
 | amountPaidPaise | number \| null | |
 | progress | `{ completedLessons: number; requiredLessons: number; percent: number; lastLessonId: string \| null }` | Denormalised for dashboards |
-| assessment | `{ bestResultId: string \| null; passed: boolean; attemptsUsed: number }` | |
+| assessment | `{ bestResultId: string \| null; bestPercent: number; passed: boolean; attemptsUsed: number }` | Updated in the grading transaction |
 | certificateId | string \| null | |
 | source | `"checkout" \| "admin_grant"` | |
 | activatedAt, completedAt | Timestamp \| null | |
@@ -202,13 +203,15 @@ Rules: **no client access at all**, admins included. Admin UI reads it through S
 
 ## 9. `assessmentAttempts/{attemptId}`
 
+**ID:** `{uid}_{assessmentId}_{attemptNumber}` (deterministic, so two concurrent starts cannot both create attempt N).
+
 | Field | Type | Notes |
 |---|---|---|
 | uid, courseId, assessmentId | string | |
 | attemptNumber | number | |
 | status | `"in_progress" \| "submitted" \| "auto_submitted" \| "expired"` | |
 | questions | `{ questionId: string; text: string; options: { id: string; text: string }[] }[]` | Served copy in randomized order, **without** `correctOptionId` |
-| answers | `Record<questionId, optionId>` | Saved through a Server Action, which rejects writes after `expiresAt + 10s` grace |
+| answers | `Record<questionId, optionId>` | Saved through a Server Action, which rejects writes after `expiresAt + 30s` grace |
 | startedAt, expiresAt, submittedAt | Timestamp | Server clock only |
 | resultId | string \| null | |
 
@@ -235,6 +238,7 @@ Same ID as the attempt (1:1, idempotent).
 | timeTakenSeconds | number |
 | submittedAt | Timestamp |
 | submissionType | `"manual" \| "auto_timeout"` |
+| certificateId | string \| null (set when this attempt passed) |
 
 Rules: owner read; admin reads all.
 
@@ -248,9 +252,10 @@ Rules: owner read; admin reads all.
 | studentName | string | snapshot |
 | courseTitle | string | snapshot |
 | grade | string | |
+| percent | number | score of the passing attempt |
 | completionDate | Timestamp | |
 | issuedAt | Timestamp \| null | |
-| status | `"pending" \| "valid" \| "revoked" \| "failed"` | `pending` triggers the render function |
+| status | `"pending" \| "valid" \| "revoked" \| "failed"` | Issued as `valid` in the grading transaction (HTML certificate); `pending` is reserved for the future PDF render function |
 | pdfPath | string \| null | private `certificates/{certificateId}.pdf` |
 | directorName | string | snapshot from settings |
 | revokedAt, revokedReason, revokedBy | | |

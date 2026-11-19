@@ -79,7 +79,7 @@ export function Navbar({ programs = [], logoUrl, pathname: currentPath = null }:
   const keepVisible = menuValue !== "";
   const signedIn = useSignedInHint();
   const accountHref = signedIn === "admin" ? routes.admin.root : routes.dashboard.root;
-  const enrollHref = routes.enroll(Boolean(signedIn));
+  const enrollHref = routes.enroll();
 
   return (
     <header
@@ -225,9 +225,9 @@ function InternshipsMenu({ programs, enrollHref, signedIn }: { programs: NavProg
             <ArrowRight aria-hidden="true" className="size-4 text-mint transition-transform duration-300 group-hover:translate-x-0.5" />
           </span>
           <span className="text-sm text-on-forest-soft">
-            {signedIn ? "Choose a program and complete your enrollment." : "Create your account or sign in to enroll in a program."}
+            {signedIn ? "Choose a program and complete your enrollment." : "Create your account and apply for an internship in one step."}
           </span>
-          <span className="mt-auto font-mono text-[11px] uppercase tracking-[0.14em] text-mint">{signedIn ? "Choose a program" : "Sign up · Sign in"}</span>
+          <span className="mt-auto font-mono text-[11px] uppercase tracking-[0.14em] text-mint">{signedIn ? "Choose a program" : "Apply now"}</span>
         </Link>
       </Nav.Link>
     </div>
@@ -292,7 +292,7 @@ function MobileMenu({ pathname, programs, accountHref, enrollHref }: { pathname:
                           <Link href={enrollHref} className="flex flex-col gap-2 rounded-md bg-forest p-4 text-on-forest">
                             <UserPlus aria-hidden="true" className="size-5 text-mint" />
                             <span className="text-lg font-medium">Enroll</span>
-                            <span className="text-xs text-on-forest-soft">{accountHref ? "Choose a program" : "Sign up or sign in"}</span>
+                            <span className="text-xs text-on-forest-soft">{accountHref ? "Choose a program" : "Apply in one step"}</span>
                           </Link>
                         </DialogClose>
                       </div>

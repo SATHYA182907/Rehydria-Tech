@@ -295,6 +295,14 @@ writes `auditLogs` and `mailQueue` entries. Course access is derived **only** fr
 | `expireAssessmentAttempts` | `onSchedule("every 5 minutes")` | Auto-submit attempts past `expiresAt` with saved answers |
 | `aggregateStats` | `onDocumentWritten` on payments/enrollments/certificates | Maintain `stats/global` counters for admin overview (avoids full scans) |
 
+As built: assessment grading and certificate issue run in Server Actions
+(`src/services/assessments/engine.ts`) inside one Firestore transaction (result doc id =
+attempt id, so a double submit is idempotent; attempt ids are deterministic per attempt number,
+so concurrent starts cannot exceed `maxAttempts`). Timed-out attempts are finalised lazily with
+their saved answers when the student next opens the assessment. Certificates are created with
+status `valid` and rendered as HTML (`/certificate/[id]`, browser "Save as PDF");
+`renderCertificate` will add stored PDFs later.
+
 Secrets for functions use `defineSecret()` (Google Secret Manager). They are never stored
 in `.env` files committed to git.
 

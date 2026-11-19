@@ -14,7 +14,7 @@ export type ActionResult = { ok: true; message?: string } | { ok: false; error: 
 
 /** Updates the student's own profile. Only whitelisted fields; role/email are never writable. */
 export async function updateProfile(input: unknown): Promise<ActionResult> {
-  const user = await requireUser("/dashboard/profile");
+  const user = await requireUser("/dashboard/settings");
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Please check the form." };
   await adminDb()
@@ -25,6 +25,7 @@ export async function updateProfile(input: unknown): Promise<ActionResult> {
         fullName: parsed.data.fullName,
         phone: toE164India(parsed.data.phone),
         college: parsed.data.college,
+        degree: parsed.data.degree,
         yearOfStudy: parsed.data.yearOfStudy,
         updatedAt: FieldValue.serverTimestamp(),
       },

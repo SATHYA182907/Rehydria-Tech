@@ -9,18 +9,16 @@ export const routes = {
   faq: "/faq",
   login: "/login",
   register: "/register",
-  /** Enroll entry point: sign up (or sign in) first, then choose a program. */
-  enroll: (signedIn: boolean) => (signedIn ? "/internships" : `/register?next=${encodeURIComponent("/internships")}`),
+  /** Enrollment application (creates the account if needed), optionally for one course. */
+  enroll: (courseSlug?: string) => (courseSlug ? `/enroll?course=${encodeURIComponent(courseSlug)}` : "/enroll"),
   verify: (certificateId: string) => `/verify/${certificateId}`,
   dashboard: {
     root: "/dashboard",
     courses: "/dashboard/courses",
     course: (courseId: string) => `/dashboard/courses/${courseId}`,
-    materials: "/dashboard/materials",
-    assessments: "/dashboard/assessments",
-    results: "/dashboard/results",
+    assessment: (courseId: string) => `/dashboard/courses/${courseId}/assessment`,
     certificates: "/dashboard/certificates",
-    profile: "/dashboard/profile",
+    settings: "/dashboard/settings",
   },
   admin: {
     root: "/admin",

@@ -46,7 +46,7 @@ export default async function HackathonGuidePage() {
               <Price amountPaise={guide.pricePaise} compareAtPaise={guide.compareAtPricePaise} size="lg" />
               {payments && guide.available ? (
                 <Button asChild size="lg">
-                  <Link href={`/login?next=${encodeURIComponent("/dashboard/materials?buy=" + guide.id)}`}>Buy now</Link>
+                  <Link href={`/login?next=${encodeURIComponent("/dashboard/courses")}`}>Buy now</Link>
                 </Button>
               ) : (
                 <Button size="lg" disabled>

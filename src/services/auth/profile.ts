@@ -36,6 +36,7 @@ export async function ensureUserProfile(seed: ProfileSeed): Promise<void> {
       phone: seed.phone ?? null,
       role: "student",
       college: null,
+      degree: null,
       yearOfStudy: null,
       profileImage: null,
       accountSetupComplete: true,
@@ -53,6 +54,7 @@ export interface ProfileView {
   email: string;
   phone: string | null;
   college: string | null;
+  degree: string | null;
   yearOfStudy: YearOfStudy | null;
   role: "student" | "admin";
 }
@@ -67,6 +69,7 @@ export async function getProfile(uid: string): Promise<ProfileView | null> {
     email: d.email ?? "",
     phone: d.phone ?? null,
     college: d.college ?? null,
+    degree: d.degree ?? null,
     yearOfStudy: d.yearOfStudy ?? null,
     role: d.role === "admin" ? "admin" : "student",
   };

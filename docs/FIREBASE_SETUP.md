@@ -176,7 +176,8 @@ pnpm seed
 pnpm dev
 ```
 
-`pnpm seed` writes the IoT and Arduino programs (modules, lesson outlines, draft assessments), the
+`pnpm seed` writes the IoT and Arduino programs (4 levels each with a video and a PDF lesson, the
+published 25-question final assessment and 30 clearly-marked SAMPLE questions per course), the
 Hackathon Guide and public company settings. It refuses to run without the emulator unless
 `SEED_ALLOW_DEV_PROJECT=true`, and never against a project id containing "prod". Seeded documents
 carry `_seed: true`. Everything except the Arduino module titles and the ₹200 guide price is
@@ -184,6 +185,21 @@ carry `_seed: true`. Everything except the Arduino module titles and the ₹200 
 replaced by Rehydria in the admin dashboard.
 
 Without any Firebase configuration the site still builds: catalog sections render their empty states.
+
+## 11b. Publish the launch courses to the real project
+
+`pnpm courses:publish` writes the IoT and Arduino course structure (from
+`scripts/lib/course-catalog.ts`, no sample questions) to the project in
+`NEXT_PUBLIC_FIREBASE_PROJECT_ID`, using `FIREBASE_ADMIN_*` credentials. Existing courses are
+skipped unless `--force`. Fees start at 0 ("Fee to be announced"); set them in `/admin/courses`.
+
+Then, as admin:
+1. `/admin/lessons`: add each level's video link and PDF link ("Add links").
+2. `/admin/questions/new`: paste at least 25 questions per course (more = varied attempts).
+   The assessment cannot start until the bank has enough active questions.
+3. `/admin/settings`: director name (printed on certificates).
+
+Until Razorpay is connected, activate paid applications in `/admin/enrollments` ("Activate").
 
 ## 12. Configure company details
 

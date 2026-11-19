@@ -28,6 +28,8 @@ export interface UserProfile<TTime> extends Audit<TTime> {
   /** Display only. Authorization uses the `admin` custom claim. */
   role: UserRole;
   college: string | null;
+  /** Current higher-education course, e.g. "B.E. Electronics & Communication". */
+  degree: string | null;
   yearOfStudy: YearOfStudy | null;
   profileImage: string | null;
   accountSetupComplete: boolean;
@@ -135,7 +137,7 @@ export interface Enrollment<TTime> extends Audit<TTime> {
   courseSnapshot: { title: string; slug: string; pricePaise: number };
   uid: string | null;
   email: string;
-  applicant: { fullName: string; phone: string; college: string; yearOfStudy: YearOfStudy };
+  applicant: { fullName: string; phone: string; degree: string; yearOfStudy: YearOfStudy };
   status: EnrollmentStatus;
   currentOrderId: string | null;
   paymentId: string | null;

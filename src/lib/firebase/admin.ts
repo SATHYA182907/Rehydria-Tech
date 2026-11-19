@@ -48,14 +48,23 @@ export function adminApp(): App {
   return getApps().find((a) => a.name === APP_NAME) ?? createApp();
 }
 
-let firestore: Firestore | undefined;
+// Kept on globalThis: separate server bundles share one Admin app (and therefore one
+// Firestore instance), and settings() may only be called once per instance.
+const DB_KEY = Symbol.for("rehydria.adminDb");
+type DbHolder = { [DB_KEY]?: Firestore };
 
 export function adminDb(): Firestore {
-  if (!firestore) {
-    firestore = getFirestore(adminApp());
-    firestore.settings({ ignoreUndefinedProperties: true });
+  const holder = globalThis as DbHolder;
+  if (!holder[DB_KEY]) {
+    const db = getFirestore(adminApp());
+    try {
+      db.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // Already configured by another bundle.
+    }
+    holder[DB_KEY] = db;
   }
-  return firestore;
+  return holder[DB_KEY];
 }
 
 /** Public download URL for an object under the world-readable `public/` Storage prefix. */
