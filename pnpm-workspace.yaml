@@ -4,3 +4,9 @@ packages:
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+overrides:
+  # firebase-admin/auth -> jwks-rsa 4 require()s jose 6, which is ESM-only and crashes on
+  # serverless Node runtimes without require(esm). jose 5 ships CommonJS with the same
+  # importJWK/exportSPKI API that jwks-rsa uses.
+  jwks-rsa>jose: 5.10.0
