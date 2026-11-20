@@ -45,7 +45,7 @@ decision changes, update this file in the same change.
 
 | Concern | Where it runs | Why |
 |---|---|---|
-| Rendering, SEO, routing | Next.js on Vercel | Edge CDN, streaming, Cache Components |
+| Rendering, SEO, routing | Next.js on Vercel | Edge CDN, streaming, Cache Components. Functions run in `bom1` (Mumbai, `vercel.json`) next to Firestore `asia-south1`: each database round trip is a few ms instead of ~200 ms from the US default region |
 | Request/response business logic (create order, verify payment, submit exam, admin CRUD) | Next.js Server Actions & Route Handlers using `firebase-admin` | One codebase, one deploy, typed end-to-end; no cold-start hop to a second service in the checkout path |
 | Razorpay webhook | Next.js Route Handler `POST /api/webhooks/razorpay` | Needs raw body for HMAC; same fulfilment code as checkout verification |
 | Event-driven & background work (emails, PDF generation, schedules) | Firebase Cloud Functions v2 | Retries, Firestore triggers, schedulers, longer CPU time; failures never block the user request |

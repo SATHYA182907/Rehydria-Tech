@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ProgressRing } from "@/components/ui/feedback";
 import { routes } from "@/config/routes";
+import { isPaymentsConfigured } from "@/lib/integrations";
 import { getProfile } from "@/services/auth/profile";
 import { requireUser } from "@/services/auth/session";
 import { getPublishedCourses } from "@/services/catalog";
@@ -82,11 +83,11 @@ export default async function MyCoursesPage() {
                     <Clock aria-hidden="true" className="mt-0.5 size-5 text-warning" />
                     <div className="flex flex-col gap-0.5">
                       <p className="font-medium">{a.title}</p>
-                      <p className="text-sm text-ink-soft">Your application is saved. The course unlocks after payment.</p>
+                      <p className="text-sm text-ink-soft">{isPaymentsConfigured() ? "Your application is saved. The course unlocks after payment." : "Your application is saved. Continue to start the course."}</p>
                     </div>
                   </div>
                   <Button asChild size="sm" variant="secondary" className="shrink-0">
-                    <Link href={`/enroll/payment?id=${encodeURIComponent(a.id)}`}>View application</Link>
+                    <Link href={`/enroll/payment?id=${encodeURIComponent(a.id)}`}>Continue</Link>
                   </Button>
                 </li>
               ))}

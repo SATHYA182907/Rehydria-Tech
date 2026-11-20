@@ -208,7 +208,17 @@ Then, as admin:
    The assessment cannot start until the bank has enough active questions.
 3. `/admin/settings`: director name (printed on certificates).
 
-Until Razorpay is connected, activate paid applications in `/admin/enrollments` ("Activate").
+**Preview mode (no payment gateway yet).** While `RAZORPAY_*` variables are not set, the payment
+step shows "Start learning now": the student's own application is activated without payment and
+marked `source: "payment_bypass"`. As soon as the Razorpay keys are configured this button
+disappears and the server refuses the bypass. Admins can still activate applications in
+`/admin/enrollments`.
+
+**Demo content.** The live project currently holds DEMO lesson files (`public/demo/*`, linked from
+each lesson's private content) and 25 DEMO questions per course (`questions/{course}-demo-NN`,
+`demo: true`). To switch to real content: set each lesson's links in `/admin/lessons`, add the
+real questions in `/admin/questions/new`, then deactivate the demo questions in `/admin/questions`.
+`pnpm courses:publish --demo` recreates the same demo set on a fresh project.
 
 ## 12. Configure company details
 

@@ -6,6 +6,7 @@ import { AuthHeading } from "@/components/auth/auth-heading";
 import { PaymentPending } from "@/components/enrollment/payment-pending";
 import { Accent } from "@/components/layout/section";
 import { Skeleton } from "@/components/ui/feedback";
+import { isPaymentsConfigured } from "@/lib/integrations";
 import { yearOfStudyOptions } from "@/lib/validations/common";
 import { requireUser } from "@/services/auth/session";
 import { getEnrollmentForPayment } from "@/services/enrollment/queries";
@@ -44,7 +45,7 @@ async function Payment({ searchParams }: { searchParams: PageProps<"/enroll/paym
           </div>
         ))}
       </dl>
-      <PaymentPending fee={e.pricePaise > 0 ? formatPaise(e.pricePaise) : "Fee to be announced"} />
+      <PaymentPending enrollmentId={e.id} previewMode={!isPaymentsConfigured()} fee={e.pricePaise > 0 ? formatPaise(e.pricePaise) : "Fee to be announced"} />
     </div>
   );
 }

@@ -2,8 +2,8 @@
  * DEVELOPMENT SEED: never run against production.
  *
  * Writes the two launch programs (IoT, Arduino: 4 levels + final assessment, from
- * scripts/lib/course-catalog.ts), SAMPLE assessment questions (emulator/dev only, so the exam
- * can be tested), the Hackathon Guide product and the public company settings.
+ * scripts/lib/course-catalog.ts) with DEMO lesson files and the DEMO question bank
+ * (scripts/lib/demo-content.ts), the Hackathon Guide product and the public company settings.
  *
  * Content status:
  *   - Arduino module titles: from the Rehydria project brief.
@@ -18,7 +18,7 @@
  */
 import { applicationDefault, cert, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore, type WriteBatch } from "firebase-admin/firestore";
-import { COURSE_DEFS, courseWrites } from "./lib/course-catalog";
+import { COURSE_DEFS, courseWrites, demoQuestionWrites } from "./lib/course-catalog";
 import { COLLECTIONS, SETTINGS_DOCS } from "../src/shared/collections";
 
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "demo-rehydria";
@@ -63,36 +63,11 @@ async function commitInChunks(writes: ((batch: WriteBatch) => void)[]) {
   }
 }
 
-/** SAMPLE questions (development only) so the 25-question exam can be exercised locally. */
-function sampleQuestions(courseId: string, title: string): ((b: WriteBatch) => void)[] {
-  const out: ((b: WriteBatch) => void)[] = [];
-  for (let i = 1; i <= 30; i++) {
-    const correct = (["a", "b", "c", "d"] as const)[i % 4]!;
-    out.push((b) =>
-      b.set(db.collection(COLLECTIONS.questions).doc(`${courseId}-sample-${String(i).padStart(2, "0")}`), {
-        ...SEED,
-        courseId,
-        assessmentIds: [`${courseId}-final`],
-        text: `SAMPLE question ${i} for ${title}: which option is marked correct in this development seed?`,
-        options: (["a", "b", "c", "d"] as const).map((id) => ({ id, text: id === correct ? `Option ${id.toUpperCase()} (correct)` : `Option ${id.toUpperCase()}` })),
-        correctOptionId: correct,
-        explanation: null,
-        difficulty: "easy",
-        active: true,
-        createdAt: now,
-        updatedAt: now,
-        createdBy: SYSTEM,
-      }),
-    );
-  }
-  return out;
-}
-
 async function main() {
   const writes: ((b: WriteBatch) => void)[] = [];
   for (const c of COURSE_DEFS) {
-    writes.push(...courseWrites(db, c, SEED));
-    writes.push(...sampleQuestions(c.id, c.title));
+    writes.push(...courseWrites(db, c, SEED, { demoContent: true }));
+    writes.push(...demoQuestionWrites(db, c.id, SEED));
   }
 
   writes.push((b) =>

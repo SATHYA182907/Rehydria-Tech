@@ -329,7 +329,8 @@ export interface LessonLinks {
   pdfUrl: string | null;
 }
 
-const SAFE_URL = /^https:\/\/[^\s]+$/;
+// https links, or files hosted by this site (e.g. /demo/... preview content).
+const SAFE_URL = /^(https:\/\/[^\s]+|\/(?!\/)[A-Za-z0-9/_.-]+)$/;
 
 /**
  * Video / PDF links for a course's lessons. Caller must have verified an active enrollment.
@@ -366,14 +367,16 @@ export interface CourseAssessmentState {
 
 export async function getCourseAssessmentState(uid: string, courseId: string): Promise<CourseAssessmentState> {
   const db = adminDb();
-  const course = (await db.collection(COLLECTIONS.courses).doc(courseId).get()).data() ?? {};
-  const assessmentId = (course.finalAssessmentId as string | null) ?? null;
-  const a = assessmentId ? (await db.collection(COLLECTIONS.assessments).doc(assessmentId).get()).data() : undefined;
-  const [attemptsSnap, resultsSnap, enrollSnap] = await Promise.all([
+  // One parallel round of reads, then the assessment document.
+  const [courseSnap, attemptsSnap, resultsSnap, enrollSnap] = await Promise.all([
+    db.collection(COLLECTIONS.courses).doc(courseId).get(),
     db.collection(COLLECTIONS.assessmentAttempts).where("uid", "==", uid).get(),
     db.collection(COLLECTIONS.assessmentResults).where("uid", "==", uid).get(),
     db.collection(COLLECTIONS.enrollments).where("uid", "==", uid).get(),
   ]);
+  const course = courseSnap.data() ?? {};
+  const assessmentId = (course.finalAssessmentId as string | null) ?? null;
+  const a = assessmentId ? (await db.collection(COLLECTIONS.assessments).doc(assessmentId).get()).data() : undefined;
   const attempts = rows(attemptsSnap).filter((r) => r.assessmentId === assessmentId);
   const nowMs = Date.now();
   const live = attempts.find((r) => r.status === "in_progress" && Date.parse(toIso(r.expiresAt) ?? "") > nowMs);

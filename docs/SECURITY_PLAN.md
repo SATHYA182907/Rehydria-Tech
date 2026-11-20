@@ -138,7 +138,9 @@ Signing needs the service account to hold `roles/iam.serviceAccountTokenCreator`
 ## 6. Authentication hardening
 
 - Session cookies are `__session`, `httpOnly`, `secure`, `sameSite=lax`, 7-day expiry, verified with
-  `checkRevoked: true` on sensitive operations (payments, admin, assessment submit).
+  `checkRevoked: true` for the admin area (`requireAdmin`), so revoking a user or removing the
+  admin claim takes effect immediately. Student pages verify signature and expiry locally (no
+  extra network call per navigation); sign-out deletes the cookie and revokes refresh tokens.
 - `POST /api/auth/session` requires an ID token with `auth_time` within 5 minutes and is
   CSRF-protected: it requires `Origin` to match `NEXT_PUBLIC_SITE_URL`.
 - Server Actions rely on Next's built-in Origin/Host check; `serverActions.allowedOrigins`

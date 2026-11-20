@@ -145,7 +145,7 @@ export interface Enrollment<TTime> extends Audit<TTime> {
   progress: { completedLessons: number; requiredLessons: number; percent: number; lastLessonId: string | null };
   assessment: { bestResultId: string | null; passed: boolean; attemptsUsed: number };
   certificateId: string | null;
-  source: "checkout" | "admin_grant";
+  source: "checkout" | "admin_grant" | "payment_bypass";
   activatedAt: TTime | null;
   completedAt: TTime | null;
 }

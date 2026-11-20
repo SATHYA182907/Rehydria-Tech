@@ -99,7 +99,18 @@ const nextConfig: NextConfig = {
     return [{ source: "/register", destination: "/enroll", permanent: false }];
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // Lesson files hosted by the site open inside the course page's viewer (same origin only).
+      {
+        source: "/demo/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          { key: "Cache-Control", value: "public, max-age=86400" },
+        ],
+      },
+    ];
   },
 };
 

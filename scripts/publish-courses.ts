@@ -4,6 +4,7 @@
  *
  *   pnpm courses:publish                 # creates courses that do not exist yet
  *   pnpm courses:publish --force         # also overwrites existing course structure
+ *   pnpm courses:publish --demo          # include DEMO lesson files + demo question bank
  *
  * Credentials: FIREBASE_ADMIN_* from .env.local, or Application Default Credentials.
  * Existing courses are skipped by default so edits made in /admin/courses are never lost.
@@ -11,10 +12,11 @@
 import { applicationDefault, cert, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { COLLECTIONS } from "../src/shared/collections";
-import { COURSE_DEFS, commitInChunks, courseWrites } from "./lib/course-catalog";
+import { COURSE_DEFS, commitInChunks, courseWrites, demoQuestionWrites } from "./lib/course-catalog";
 
 const projectId = process.env.PUBLISH_PROJECT_ID ?? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const force = process.argv.includes("--force");
+const demo = process.argv.includes("--demo");
 if (!projectId) {
   console.error("Set PUBLISH_PROJECT_ID (or NEXT_PUBLIC_FIREBASE_PROJECT_ID).");
   process.exit(1);
@@ -40,7 +42,7 @@ async function main() {
       console.log(`- ${c.title}: already exists, skipped (use --force to overwrite).`);
       continue;
     }
-    await commitInChunks(db, courseWrites(db, c));
+    await commitInChunks(db, [...courseWrites(db, c, {}, { demoContent: demo }), ...(demo ? demoQuestionWrites(db, c.id) : [])]);
     console.log(`✓ ${c.title}: published (4 levels, 8 lessons, final assessment).`);
   }
 }

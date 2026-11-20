@@ -1,14 +1,34 @@
 "use client";
 
-import { CreditCard, LayoutDashboard, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, CreditCard, LayoutDashboard, ShieldCheck, Sparkles } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { continueWithoutPayment } from "@/services/enrollment/actions";
 import { Stepper } from "./enroll-form";
 
-/** Animated "gateway coming soon" panel (no payment is taken or simulated). */
-export function PaymentPending({ fee }: { fee: string }) {
+/**
+ * Checkout panel. No payment is taken or simulated. While no gateway is configured
+ * (preview mode) the student can start the course straight away; the enrollment is
+ * marked so it can be reconciled once payments go live.
+ */
+export function PaymentPending({ fee, enrollmentId, previewMode }: { fee: string; enrollmentId: string; previewMode: boolean }) {
   const reduce = useReducedMotion();
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const startNow = () =>
+    start(async () => {
+      const res = await continueWithoutPayment(enrollmentId);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success("You're in! Your course is unlocked.");
+      router.push(`/dashboard/courses/${res.courseId}`);
+    });
   return (
     <div className="flex flex-col gap-6">
       <Stepper current={1} />
@@ -41,17 +61,31 @@ export function PaymentPending({ fee }: { fee: string }) {
           <div className="flex items-start gap-3 rounded-sm bg-white/10 p-4 text-sm">
             <Sparkles aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-mint" />
             <p>
-              Online payment is being connected. Your application is saved; we&apos;ll notify you as soon as you can complete payment and
-              start learning.
+              {previewMode
+                ? "Online payment is being connected. Until then you can start your course right away; no payment is needed in this preview."
+                : "Online payment is being connected. Your application is saved; we'll notify you as soon as you can complete payment and start learning."}
             </p>
           </div>
         </div>
       </motion.div>
-      <Button asChild size="lg">
-        <Link href="/dashboard/courses">
-          <LayoutDashboard aria-hidden="true" /> Go to my dashboard
-        </Link>
-      </Button>
+      {previewMode ? (
+        <div className="flex flex-col gap-3">
+          <Button size="lg" loading={pending} onClick={startNow}>
+            Start learning now <ArrowRight aria-hidden="true" />
+          </Button>
+          <Button asChild size="lg" variant="secondary">
+            <Link href="/dashboard/courses">
+              <LayoutDashboard aria-hidden="true" /> Go to my dashboard
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <Button asChild size="lg">
+          <Link href="/dashboard/courses">
+            <LayoutDashboard aria-hidden="true" /> Go to my dashboard
+          </Link>
+        </Button>
+      )}
     </div>
   );
 }

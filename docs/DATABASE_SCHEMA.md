@@ -132,7 +132,7 @@ This blocks two pending or active enrollments for the same email and course, whe
 | progress | `{ completedLessons: number; requiredLessons: number; percent: number; lastLessonId: string \| null }` | Denormalised for dashboards |
 | assessment | `{ bestResultId: string \| null; bestPercent: number; passed: boolean; attemptsUsed: number }` | Updated in the grading transaction |
 | certificateId | string \| null | |
-| source | `"checkout" \| "admin_grant"` | |
+| source | `"checkout" \| "admin_grant" \| "payment_bypass"` | `payment_bypass`: activated without payment while no gateway is configured (preview mode) |
 | activatedAt, completedAt | Timestamp \| null | |
 | createdAt, updatedAt | | |
 

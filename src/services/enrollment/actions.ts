@@ -6,7 +6,9 @@ import { toE164India } from "@/lib/validations/common";
 import { enrollmentDetailsSchema } from "@/lib/validations/enrollment";
 import { requireUser } from "@/services/auth/session";
 import { COLLECTIONS } from "@/shared/collections";
-import { enrollmentId } from "@/shared/ids";
+import { isPaymentsConfigured } from "@/lib/integrations";
+import { courseMemberId, enrollmentId } from "@/shared/ids";
+import { revalidatePath } from "next/cache";
 
 export type ApplicationResult =
   | { ok: true; enrollmentId: string; status: "pending_payment" | "active" | "completed"; courseId: string }
@@ -71,4 +73,48 @@ export async function createEnrollmentApplication(input: unknown): Promise<Appli
   });
 
   return { ok: true, enrollmentId: id, status: status as "pending_payment" | "active" | "completed", courseId: v.courseId };
+}
+
+const ENROLLMENT_ID = /^[A-Za-z0-9_-]{1,140}$/;
+
+/**
+ * Preview mode: while no payment gateway is configured, a student can start their own
+ * pending course without paying. The enrollment is marked `source: "payment_bypass"` so it can
+ * be found later. As soon as Razorpay credentials exist this action refuses to run.
+ */
+export async function continueWithoutPayment(input: unknown): Promise<ApplicationResult> {
+  if (isPaymentsConfigured()) return { ok: false, error: "Please complete payment to start the course." };
+  const user = await requireUser("/enroll");
+  const id = typeof input === "string" ? input : "";
+  if (!ENROLLMENT_ID.test(id)) return { ok: false, error: "Invalid application." };
+  const db = adminDb();
+  const ref = db.collection(COLLECTIONS.enrollments).doc(id);
+  try {
+    const result = await db.runTransaction(async (tx) => {
+      const d = (await tx.get(ref)).data();
+      if (!d || d.uid !== user.uid) throw new Error("Application not found.");
+      const courseId = String(d.courseId);
+      if (d.status === "active" || d.status === "completed") return { courseId, status: d.status as "active" | "completed" };
+      if (d.status !== "pending_payment") throw new Error("This application cannot be activated.");
+      const now = FieldValue.serverTimestamp();
+      tx.update(ref, { status: "active", source: "payment_bypass", activatedAt: now, updatedAt: now });
+      tx.set(db.collection(COLLECTIONS.courseMembers).doc(courseMemberId(courseId, user.uid)), { active: true });
+      tx.set(db.collection(COLLECTIONS.auditLogs).doc(), {
+        actorUid: user.uid,
+        action: "enrollment.payment_bypass",
+        targetType: "enrollment",
+        targetId: id,
+        before: { status: "pending_payment" },
+        after: { status: "active", source: "payment_bypass" },
+        ip: null,
+        userAgent: null,
+        createdAt: now,
+      });
+      return { courseId, status: "active" as const };
+    });
+    revalidatePath("/dashboard", "layout");
+    return { ok: true, enrollmentId: id, status: result.status, courseId: result.courseId };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Could not start the course." };
+  }
 }

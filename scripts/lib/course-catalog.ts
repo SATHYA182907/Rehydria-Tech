@@ -9,6 +9,7 @@
 import { FieldValue, type Firestore, type WriteBatch } from "firebase-admin/firestore";
 import { COLLECTIONS } from "../../src/shared/collections";
 import { DEFAULT_GRADING_SCALE, DEFAULT_PASSING_PERCENT } from "../../src/shared/grading";
+import { DEMO_QUESTIONS, demoLessonLinks } from "./demo-content";
 
 export interface LevelDef {
   title: string;
@@ -100,7 +101,12 @@ export const lessonId = (courseId: string, n: number, kind: "video" | "pdf") => 
 export const assessmentId = (courseId: string) => `${courseId}-final`;
 
 /** Returns the writes for one course (course, levels, lessons, private content, assessment). */
-export function courseWrites(db: Firestore, c: CourseDef, extra: Record<string, unknown> = {}): ((b: WriteBatch) => void)[] {
+export function courseWrites(
+  db: Firestore,
+  c: CourseDef,
+  extra: Record<string, unknown> = {},
+  opts: { demoContent?: boolean } = {},
+): ((b: WriteBatch) => void)[] {
   const now = FieldValue.serverTimestamp();
   const writes: ((b: WriteBatch) => void)[] = [];
   const by = "course-publisher";
@@ -176,7 +182,14 @@ export function courseWrites(db: Firestore, c: CourseDef, extra: Record<string, 
         }),
       );
       writes.push((b) =>
-        b.set(ref.collection("private").doc("content"), { ...extra, video: null, videoUrl: null, pdfUrl: null, bodyMarkdown: null, resources: [], assignment: null }),
+        b.set(ref.collection("private").doc("content"), {
+          ...extra,
+          video: null,
+          ...(opts.demoContent ? { ...demoLessonLinks(c.id, n), demo: true } : { videoUrl: null, pdfUrl: null }),
+          bodyMarkdown: null,
+          resources: [],
+          assignment: null,
+        }),
       );
     });
   });
@@ -212,4 +225,31 @@ export async function commitInChunks(db: Firestore, writes: ((b: WriteBatch) => 
     writes.slice(i, i + 400).forEach((w) => w(batch));
     await batch.commit();
   }
+}
+
+/** DEMO question bank (25 per course), flagged `demo: true` so it can be swapped out later. */
+export function demoQuestionWrites(db: Firestore, courseId: string, extra: Record<string, unknown> = {}): ((b: WriteBatch) => void)[] {
+  const now = FieldValue.serverTimestamp();
+  return (DEMO_QUESTIONS[courseId] ?? []).map(([text, a, b, cOpt, d, correct], i) => (batch: WriteBatch) =>
+    batch.set(db.collection(COLLECTIONS.questions).doc(`${courseId}-demo-${String(i + 1).padStart(2, "0")}`), {
+      ...extra,
+      courseId,
+      assessmentIds: [assessmentId(courseId)],
+      text,
+      options: [
+        { id: "a", text: a },
+        { id: "b", text: b },
+        { id: "c", text: cOpt },
+        { id: "d", text: d },
+      ],
+      correctOptionId: correct,
+      explanation: null,
+      difficulty: "easy",
+      active: true,
+      demo: true,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: "course-publisher",
+    }),
+  );
 }
