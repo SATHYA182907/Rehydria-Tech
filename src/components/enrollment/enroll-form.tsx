@@ -9,6 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { FormAlert } from "@/components/auth/auth-heading";
+import { GoogleButton, OrDivider } from "@/components/auth/google-button";
 import { Button } from "@/components/ui/button";
 import { RadioCard, RadioCards } from "@/components/ui/choice";
 import { Field } from "@/components/ui/field";
@@ -108,6 +109,13 @@ export function EnrollForm({ courses }: { courses: EnrollCourseOption[] }) {
   return (
     <div>
       <Stepper current={0} />
+      {!signedIn && (
+        <>
+          <GoogleButton label="Sign up with Google" onSuccess={() => router.refresh()} onError={(text) => setError({ text })} />
+          <p className="mt-2 text-center text-[13px] text-ink-soft">Then complete your details below.</p>
+          <OrDivider />
+        </>
+      )}
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
         {error && (
           <FormAlert>

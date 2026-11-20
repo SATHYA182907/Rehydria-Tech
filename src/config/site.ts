@@ -11,7 +11,9 @@ export const siteConfig = {
   heroHeadline: "Where Technology Meets Innovation.",
   description:
     "Transform your ideas into practical skills through industry-oriented internships, hands-on technical learning and expert hackathon guidance.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url:
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000"),
   locale: "en_IN",
   keywords: [
     "IoT internship",

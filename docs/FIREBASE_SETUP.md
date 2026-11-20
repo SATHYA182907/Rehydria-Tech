@@ -186,6 +186,15 @@ replaced by Rehydria in the admin dashboard.
 
 Without any Firebase configuration the site still builds: catalog sections render their empty states.
 
+## 11a. Check a deployment
+
+Open `https://<your-domain>/api/health`. `{"firebaseAdmin":"ok"}` means sign-in and the
+dashboard can work. `not_configured` means `FIREBASE_ADMIN_PRIVATE_KEY` / `FIREBASE_ADMIN_CLIENT_EMAIL`
+are missing; `credentials_rejected` means they are set but wrong (check the Vercel function logs).
+The private key may be pasted with `\n` escapes, real newlines, surrounding quotes, or as the
+whole service-account JSON. `NEXT_PUBLIC_SITE_URL` is in `.env.production`; on Vercel it falls back
+to the production domain automatically. Redeploy after changing any variable.
+
 ## 11b. Publish the launch courses to the real project
 
 `pnpm courses:publish` writes the IoT and Arduino course structure (from

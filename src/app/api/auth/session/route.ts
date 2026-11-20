@@ -36,10 +36,34 @@ function unavailable() {
   );
 }
 
+/** Logged server-side; the browser only gets a friendly message (never secrets or stacks). */
+function serverFailure(stage: string, err: unknown) {
+  console.error(`[auth/session] ${stage} failed:`, err instanceof Error ? err.message : err);
+  return NextResponse.json(
+    { error: "Sign-in is temporarily unavailable because of a server configuration problem. Please try again later.", stage },
+    { status: 500 },
+  );
+}
+
 export async function POST(req: NextRequest) {
+  try {
+    return await createSession(req);
+  } catch (err) {
+    return serverFailure("unexpected", err);
+  }
+}
+
+async function createSession(req: NextRequest) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
   if (!isFirebaseConfigured()) return unavailable();
-  if (!(await rateLimit("session", await clientIp(), 10, 600))) {
+  let allowed: boolean;
+  try {
+    allowed = await rateLimit("session", await clientIp(), 10, 600);
+  } catch (err) {
+    // Firestore unreachable usually means the service-account credentials are wrong.
+    return serverFailure("firestore", err);
+  }
+  if (!allowed) {
     return NextResponse.json({ error: "Too many attempts. Please wait a few minutes." }, { status: 429 });
   }
 
@@ -47,32 +71,34 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
 
   const auth = getAuth(adminApp());
+  let decoded;
   try {
-    const decoded = await auth.verifyIdToken(parsed.data.idToken, true);
-    if (Date.now() / 1000 - decoded.auth_time > RECENT_SIGN_IN_SECONDS) {
-      return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
-    }
-
-    const days = appEnv().sessionCookieDays;
-    const expiresIn = days * 24 * 60 * 60 * 1000;
-    const sessionCookie = await auth.createSessionCookie(parsed.data.idToken, { expiresIn });
-
-    await ensureUserProfile({
-      uid: decoded.uid,
-      email: decoded.email ?? null,
-      name: (decoded.name as string | undefined) ?? null,
-      fullName: parsed.data.profile?.fullName,
-      phone: parsed.data.profile ? toE164India(parsed.data.profile.phone) : null,
-    });
-
-    const jar = await cookies();
-    const secure = process.env.NODE_ENV === "production";
-    jar.set(SESSION_COOKIE_NAME, sessionCookie, { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: expiresIn / 1000 });
-    jar.set(SIGNED_IN_HINT_COOKIE, decoded.admin === true ? "admin" : "1", { httpOnly: false, secure, sameSite: "lax", path: "/", maxAge: expiresIn / 1000 });
-    return NextResponse.json({ ok: true, isAdmin: decoded.admin === true });
-  } catch {
+    decoded = await auth.verifyIdToken(parsed.data.idToken, true);
+  } catch (err) {
+    console.warn("[auth/session] token rejected:", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Your sign-in could not be verified. Please try again." }, { status: 401 });
   }
+  if (Date.now() / 1000 - decoded.auth_time > RECENT_SIGN_IN_SECONDS) {
+    return NextResponse.json({ error: "Please sign in again." }, { status: 401 });
+  }
+
+  const days = appEnv().sessionCookieDays;
+  const expiresIn = days * 24 * 60 * 60 * 1000;
+  const sessionCookie = await auth.createSessionCookie(parsed.data.idToken, { expiresIn });
+
+  await ensureUserProfile({
+    uid: decoded.uid,
+    email: decoded.email ?? null,
+    name: (decoded.name as string | undefined) ?? null,
+    fullName: parsed.data.profile?.fullName,
+    phone: parsed.data.profile ? toE164India(parsed.data.profile.phone) : null,
+  });
+
+  const jar = await cookies();
+  const secure = process.env.NODE_ENV === "production";
+  jar.set(SESSION_COOKIE_NAME, sessionCookie, { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: expiresIn / 1000 });
+  jar.set(SIGNED_IN_HINT_COOKIE, decoded.admin === true ? "admin" : "1", { httpOnly: false, secure, sameSite: "lax", path: "/", maxAge: expiresIn / 1000 });
+  return NextResponse.json({ ok: true, isAdmin: decoded.admin === true });
 }
 
 export async function DELETE(req: NextRequest) {

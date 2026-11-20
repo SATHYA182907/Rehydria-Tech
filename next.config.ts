@@ -94,6 +94,10 @@ const nextConfig: NextConfig = {
     // Tree-shake icon and animation packages to only what each route imports.
     optimizePackageImports: ["lucide-react", "radix-ui", "motion", "recharts"],
   },
+  async redirects() {
+    // The enrollment form is the account-creation form (name, contact, degree, year, course).
+    return [{ source: "/register", destination: "/enroll", permanent: false }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

@@ -23,7 +23,7 @@ export function isFirebaseConfigured(): boolean {
   if (!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) return false;
   return (
     Boolean(process.env.FIRESTORE_EMULATOR_HOST) ||
-    Boolean(process.env.FIREBASE_ADMIN_CLIENT_EMAIL && process.env.FIREBASE_ADMIN_PRIVATE_KEY) ||
+    Boolean(process.env.FIREBASE_ADMIN_PRIVATE_KEY && (process.env.FIREBASE_ADMIN_CLIENT_EMAIL || process.env.FIREBASE_ADMIN_PRIVATE_KEY.trim().startsWith("{"))) ||
     process.env.FIREBASE_ADMIN_USE_ADC === "true"
   );
 }

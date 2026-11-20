@@ -17,8 +17,52 @@ const firebaseAdminSchema = z.object({
   projectId: z.string().min(1, "NEXT_PUBLIC_FIREBASE_PROJECT_ID is required"),
   storageBucket: z.string().min(1, "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is required"),
   clientEmail: optional,
-  privateKey: optional.transform((v) => v?.replace(/\\n/g, "\n")),
+  privateKey: optional.transform((v) => (v ? normalizePrivateKey(v) : v)),
 });
+
+/**
+ * Accepts the private key however it was pasted into the hosting dashboard: with literal
+ * "\n" escapes or real newlines, wrapped in quotes, or as the whole service-account JSON.
+ */
+export function normalizePrivateKey(raw: string): string {
+  let v = raw.trim();
+  if (v.startsWith("{")) {
+    try {
+      const json = JSON.parse(v) as { private_key?: string };
+      if (json.private_key) v = json.private_key;
+    } catch {
+      // Not JSON: fall through.
+    }
+  }
+  if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+  return v.replace(/\\n/g, "\n").replace(/\r/g, "");
+}
+
+/** Client email, also read from a full service-account JSON pasted into the key variable. */
+function clientEmailFromEnv(): string | undefined {
+  const direct = process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim().replace(/^["']|["']$/g, "");
+  if (direct) return direct;
+  const raw = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim();
+  if (raw?.startsWith("{")) {
+    try {
+      return (JSON.parse(raw) as { client_email?: string }).client_email;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Canonical site URL. NEXT_PUBLIC_SITE_URL wins; on Vercel the production domain is used
+ * automatically, so a missing variable never breaks sign-in.
+ */
+export function resolveSiteUrl(): string {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (explicit) return explicit.replace(/\/$/, "");
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  return vercel ? `https://${vercel}` : "http://localhost:3000";
+}
 
 const razorpaySchema = z.object({
   keyId: z.string().regex(/^rzp_(test|live)_/, "RAZORPAY_KEY_ID must start with rzp_test_ or rzp_live_"),
@@ -59,7 +103,7 @@ export const firebaseAdminEnv = memo(() =>
     {
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      clientEmail: clientEmailFromEnv(),
       privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY,
     },
     "Firebase Admin",
@@ -94,7 +138,7 @@ export const appEnv = memo(() =>
   parse(
     appSchema,
     {
-      siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+      siteUrl: resolveSiteUrl(),
       directorName: process.env.DIRECTOR_NAME,
       directorSignatureUrl: process.env.DIRECTOR_SIGNATURE_URL,
       sessionCookieDays: process.env.SESSION_COOKIE_DAYS,

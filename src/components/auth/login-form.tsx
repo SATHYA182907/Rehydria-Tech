@@ -64,7 +64,7 @@ export function LoginForm() {
       </form>
       <p className="mt-8 text-center text-sm text-ink-soft">
         New to Rehydria?{" "}
-        <Link href={`/register${params.get("next") ? `?next=${encodeURIComponent(params.get("next")!)}` : ""}`} className="font-medium text-moss-text hover:underline">
+        <Link href="/enroll" className="font-medium text-moss-text hover:underline">
           Create an account
         </Link>
       </p>

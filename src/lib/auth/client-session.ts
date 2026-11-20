@@ -22,7 +22,7 @@ export async function createServerSession(credential: UserCredential, profile?: 
   });
   const body = (await res.json().catch(() => ({}))) as { error?: string; isAdmin?: boolean };
   await signOut(await clientAuth());
-  if (!res.ok) throw new Error(body.error ?? "Sign-in failed. Please try again.");
+  if (!res.ok) throw new Error(body.error ?? `Sign-in failed (server error ${res.status}). Please try again in a moment.`);
   notify();
   return { isAdmin: body.isAdmin === true };
 }

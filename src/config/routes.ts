@@ -8,7 +8,7 @@ export const routes = {
   contact: "/contact",
   faq: "/faq",
   login: "/login",
-  register: "/register",
+  register: "/enroll",
   /** Enrollment application (creates the account if needed), optionally for one course. */
   enroll: (courseSlug?: string) => (courseSlug ? `/enroll?course=${encodeURIComponent(courseSlug)}` : "/enroll"),
   verify: (certificateId: string) => `/verify/${certificateId}`,

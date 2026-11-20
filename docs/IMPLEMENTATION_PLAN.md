@@ -34,7 +34,7 @@ Every route in the specification exists, wired to real data:
 | Area | Routes | State |
 |---|---|---|
 | Public | `/`, `/about`, `/internships`, `/internships/[slug]`, `/enroll` (account + application), `/enroll/payment` (placeholder until Razorpay), `/hackathon-guide`, `/contact`, `/faq`, `/legal/[policy]`, `/verify`, `/verify/[certificateId]`, 404, sitemap, robots, OG image | Live. Enrollment and guide purchase show "opens soon" until Razorpay keys exist; legal pages await Rehydria's policy text |
-| Auth | `/login`, `/register`, `/reset-password`, `/account/action` | Live: email/password + Google, httpOnly session cookies, rate-limited |
+| Auth | `/login`, `/register` (redirects to `/enroll`, the account-creation form), `/reset-password`, `/account/action` | Live: email/password + Google, httpOnly session cookies, rate-limited |
 | Student | Sidebar: Courses, Certificates, Settings. `/dashboard/courses`, `/dashboard/courses/[courseId]` (4 sequential levels, video + PDF per level, completion ring), `/dashboard/courses/[courseId]/assessment` (25 MCQ / 30 min exam), `/dashboard/certificates` (locked → unlocked), `/dashboard/settings`, `/certificate/[id]` (print / save as PDF) | Live. Lesson videos/PDFs are links set by admins; generated PDF files + email (Phase 10) pending |
 | Admin | `/admin` + 12 sections + `/admin/courses/new`, `/admin/courses/[id]`, `/admin/questions/new` | Live: overview, tables for every collection, course create/edit, company settings, manual enrollment activation, lesson video/PDF links, question-bank import (plain text) and (de)activation |
 
