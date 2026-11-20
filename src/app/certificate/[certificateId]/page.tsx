@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { requestTime } from "@/lib/utils/time";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CertificateDocument } from "@/components/certificates/certificate-document";
@@ -36,7 +37,8 @@ async function Certificate({ params }: { params: Promise<{ certificateId: string
   const user = await requireUser(`/certificate/${certificateId}`);
   if (!CERTIFICATE_ID_PATTERN.test(certificateId)) notFound();
   const cert = (await getStudentCertificates(user.uid)).find((c) => c.id === certificateId && c.status === "valid");
-  if (!cert) notFound();
+  // Locked until the internship period ends.
+  if (!cert || (cert.availableAt && Date.parse(cert.availableAt) > requestTime())) notFound();
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 print:max-w-none print:p-0">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">

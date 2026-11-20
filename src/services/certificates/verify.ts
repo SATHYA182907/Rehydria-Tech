@@ -26,6 +26,9 @@ export async function verifyCertificate(rawId: string): Promise<CertificateVerif
   const snap = await adminDb().collection(COLLECTIONS.certificates).doc(id).get();
   const d = snap.data();
   if (!snap.exists || !d || (d.status !== "valid" && d.status !== "revoked")) return { status: "not_found", certificateId: id };
+  // Not public until the internship period has ended (cached, so it appears within the cache window).
+  const availableAt = d.availableAt as { toMillis?: () => number } | null | undefined;
+  if (availableAt?.toMillis && availableAt.toMillis() > Date.now()) return { status: "not_found", certificateId: id };
   return {
     status: d.status,
     certificateId: id,

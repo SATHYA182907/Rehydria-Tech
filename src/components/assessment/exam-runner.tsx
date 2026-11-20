@@ -345,6 +345,9 @@ function ExamResult({ info, outcome, attemptsLeft, fresh }: { info: ExamInfo; ou
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const pct = Math.min(100, Math.max(0, outcome.percent));
+  const unlockMs = outcome.certificateAvailableAt ? Date.parse(outcome.certificateAvailableAt) : 0;
+  // eslint-disable-next-line react-hooks/purity -- display-only comparison with the current time
+  const unlockDate = unlockMs > Date.now() ? new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric" }).format(unlockMs) : null;
 
   return (
     <motion.section
@@ -384,7 +387,11 @@ function ExamResult({ info, outcome, attemptsLeft, fresh }: { info: ExamInfo; ou
           <>
             <CheckCircle2 aria-hidden="true" className="size-7 text-moss" />
             <h1 className="text-2xl font-medium tracking-tight">{fresh ? "Congratulations, you passed!" : "You passed this assessment"}</h1>
-            <p className="max-w-sm text-ink-soft">Your certificate for {info.courseTitle} is unlocked and ready to view, share and download.</p>
+            <p className="max-w-sm text-ink-soft">
+              {unlockDate
+                ? `Your certificate for ${info.courseTitle} unlocks on ${unlockDate}, at the end of your internship period.`
+                : `Your certificate for ${info.courseTitle} is unlocked and ready to view, share and download.`}
+            </p>
           </>
         ) : (
           <>
@@ -401,7 +408,7 @@ function ExamResult({ info, outcome, attemptsLeft, fresh }: { info: ExamInfo; ou
         {outcome.passed ? (
           <Button asChild size="lg">
             <Link href={routes.dashboard.certificates}>
-              <Award aria-hidden="true" /> View my certificate
+              <Award aria-hidden="true" /> {unlockDate ? "Certificate status" : "View my certificate"}
             </Link>
           </Button>
         ) : null}

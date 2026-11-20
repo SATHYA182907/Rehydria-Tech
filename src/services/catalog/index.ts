@@ -186,6 +186,7 @@ export interface CurriculumModule {
   id: string;
   title: string;
   summary: string;
+  topics: string[];
   lessons: { id: string; title: string; type: string; durationMinutes: number | null; isPreview: boolean }[];
 }
 
@@ -225,6 +226,7 @@ export async function getCourseBySlug(slug: string): Promise<CourseDetail | null
       id: m.id,
       title: String(m.data().title ?? ""),
       summary: String(m.data().summary ?? ""),
+      topics: Array.isArray(m.data().topics) ? (m.data().topics as unknown[]).map(String) : [],
       lessons: lessons
         .filter((l) => l.moduleId === m.id)
         .map((l) => ({ id: l.id, title: l.title, type: l.type, durationMinutes: l.durationMinutes ?? null, isPreview: Boolean(l.isPreview) })),

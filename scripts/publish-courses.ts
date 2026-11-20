@@ -1,5 +1,5 @@
 /**
- * Publish the launch courses (IoT, Arduino: 4 levels each + final assessment) to a REAL
+ * Publish the launch courses (IoT, Arduino: 6 levels each + final assessment) to a REAL
  * Firebase project. Unlike the dev seed it writes no sample data and no `_seed` flag.
  *
  *   pnpm courses:publish                 # creates courses that do not exist yet
@@ -43,7 +43,7 @@ async function main() {
       continue;
     }
     await commitInChunks(db, [...courseWrites(db, c, {}, { demoContent: demo }), ...(demo ? demoQuestionWrites(db, c.id) : [])]);
-    console.log(`✓ ${c.title}: published (4 levels, 8 lessons, final assessment).`);
+    console.log(`✓ ${c.title}: published (${c.levels.length} levels, ${c.levels.length * 2} lessons, final assessment).`);
   }
 }
 

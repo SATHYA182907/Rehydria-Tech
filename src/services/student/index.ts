@@ -34,6 +34,8 @@ export interface StudentEnrollment {
   activatedAt: string | null;
   illustration: CourseIllustration;
   code: string;
+  /** Internship period in days (certificate unlocks after it); 0 = no waiting period. */
+  periodDays: number;
 }
 
 export async function getStudentEnrollments(uid: string): Promise<StudentEnrollment[]> {
@@ -55,17 +57,23 @@ export async function getStudentEnrollments(uid: string): Promise<StudentEnrollm
         title: String(course.title ?? snapshot.title ?? "Course"),
         slug: String(course.slug ?? snapshot.slug ?? ""),
         status: r.status as EnrollmentStatus,
-        progress: {
-          completedLessons: progress.completedLessons ?? 0,
-          requiredLessons: progress.requiredLessons ?? Number(course.lessonCount ?? 0),
-          percent: progress.percent ?? 0,
-          lastLessonId: progress.lastLessonId ?? null,
-        },
+        progress: (() => {
+          // Use the course's current lesson count so added levels are reflected immediately.
+          const total = Number(course.lessonCount ?? 0) || (progress.requiredLessons ?? 0);
+          const completed = Math.min(progress.completedLessons ?? 0, total || Infinity);
+          return {
+            completedLessons: completed,
+            requiredLessons: total,
+            percent: total ? Math.min(progress.percent ?? 100, Math.round((completed / total) * 100)) : (progress.percent ?? 0),
+            lastLessonId: progress.lastLessonId ?? null,
+          };
+        })(),
         assessmentPassed: Boolean((r.assessment as { passed?: boolean } | undefined)?.passed),
         certificateId: (r.certificateId as string | null) ?? null,
         activatedAt: toIso(r.activatedAt),
         illustration: (course.illustration as CourseIllustration) ?? "chip",
         code: String(course.code ?? ""),
+        periodDays: Number((course.certificate as { unlockAfterDays?: number } | undefined)?.unlockAfterDays ?? 0),
       };
     })
     .sort((a, b) => (b.activatedAt ?? "").localeCompare(a.activatedAt ?? ""));
@@ -87,6 +95,7 @@ export interface PlayerModule {
   id: string;
   title: string;
   summary: string;
+  topics: string[];
   lessons: PlayerLesson[];
 }
 
@@ -121,8 +130,18 @@ export async function getCoursePlayer(uid: string, courseId: string): Promise<Co
   const modules = rows(modulesSnap)
     .filter((m) => m.status === "published")
     .sort((a, b) => Number(a.order) - Number(b.order))
-    .map((m) => ({ id: m.id, title: String(m.title ?? ""), summary: String(m.summary ?? ""), lessons: lessons.filter((l) => l.moduleId === m.id) }));
-  return { enrollment, modules };
+    .map((m) => ({
+      id: m.id,
+      title: String(m.title ?? ""),
+      summary: String(m.summary ?? ""),
+      topics: Array.isArray(m.topics) ? (m.topics as unknown[]).map(String) : [],
+      lessons: lessons.filter((l) => l.moduleId === m.id),
+    }));
+  // Progress is recomputed from the live curriculum, so adding levels never shows a stale 100%.
+  const required = modules.flatMap((m) => m.lessons).filter((l) => l.required);
+  const done = required.filter((l) => l.completed).length;
+  const percent = required.length ? Math.round((done / required.length) * 100) : 0;
+  return { enrollment: { ...enrollment, progress: { ...enrollment.progress, completedLessons: done, requiredLessons: required.length, percent } }, modules };
 }
 
 export interface LessonView {
@@ -254,6 +273,8 @@ export interface StudentCertificate {
   grade: string;
   status: "pending" | "valid" | "revoked" | "failed";
   issuedAt: string | null;
+  /** ISO time the certificate unlocks; null = available immediately. */
+  availableAt: string | null;
 }
 
 export async function getStudentCertificates(uid: string): Promise<StudentCertificate[]> {
@@ -270,6 +291,7 @@ export async function getStudentCertificates(uid: string): Promise<StudentCertif
         grade: String(c.grade ?? ""),
         status: c.status,
         issuedAt: toIso(c.issuedAt),
+        availableAt: toIso(c.availableAt),
       } as StudentCertificate;
     })
     .sort((a, b) => (b.issuedAt ?? "").localeCompare(a.issuedAt ?? ""));
@@ -363,6 +385,7 @@ export interface CourseAssessmentState {
   passed: boolean;
   bestResult: { grade: string; percent: number; correct: number; total: number } | null;
   certificateId: string | null;
+  certificateAvailableAt: string | null;
 }
 
 export async function getCourseAssessmentState(uid: string, courseId: string): Promise<CourseAssessmentState> {
@@ -385,6 +408,8 @@ export async function getCourseAssessmentState(uid: string, courseId: string): P
     .sort((x, y) => Number(y.percent ?? 0) - Number(x.percent ?? 0));
   const best = results[0];
   const enrollment = rows(enrollSnap).find((r) => r.courseId === courseId);
+  const certificateId = (enrollment?.certificateId as string | null) ?? null;
+  const cert = certificateId ? (await db.collection(COLLECTIONS.certificates).doc(certificateId).get()).data() : undefined;
   return {
     assessmentId,
     title: String(a?.title ?? "Final assessment"),
@@ -397,6 +422,7 @@ export async function getCourseAssessmentState(uid: string, courseId: string): P
     inProgressAttemptId: live?.id ?? null,
     passed: results.some((r) => r.passed === true),
     bestResult: best ? { grade: String(best.grade), percent: Number(best.percent), correct: Number(best.correct), total: Number(best.total) } : null,
-    certificateId: (enrollment?.certificateId as string | null) ?? null,
+    certificateId,
+    certificateAvailableAt: toIso(cert?.availableAt),
   };
 }

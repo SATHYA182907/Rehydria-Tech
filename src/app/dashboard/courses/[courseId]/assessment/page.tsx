@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/feedback";
 import { routes } from "@/config/routes";
 import { getLiveAttempt, settleExpiredAttempts } from "@/services/assessments/engine";
 import { requireUser } from "@/services/auth/session";
-import { getCourseAssessmentState, getStudentEnrollments } from "@/services/student";
+import { getCourseAssessmentState, getCoursePlayer } from "@/services/student";
 
 export const metadata: Metadata = { title: "Final assessment" };
 
@@ -16,7 +16,8 @@ const ID = /^[A-Za-z0-9_-]{1,64}$/;
 export default async function AssessmentPage({ params }: PageProps<"/dashboard/courses/[courseId]/assessment">) {
   const { courseId } = await params;
   const user = await requireUser(`/dashboard/courses/${courseId}/assessment`);
-  const enrollment = ID.test(courseId) ? (await getStudentEnrollments(user.uid)).find((e) => e.courseId === courseId) : undefined;
+  // Course player recomputes progress from the live curriculum.
+  const enrollment = ID.test(courseId) ? (await getCoursePlayer(user.uid, courseId))?.enrollment : undefined;
   const back = (
     <Button asChild>
       <Link href={enrollment ? routes.dashboard.course(courseId) : routes.dashboard.courses}>Back to course</Link>
@@ -36,7 +37,7 @@ export default async function AssessmentPage({ params }: PageProps<"/dashboard/c
   const attemptsLeft = Math.max(0, state.maxAttempts - state.attemptsUsed);
 
   if (enrollment.progress.percent < 100 && !state.passed) {
-    return <EmptyState icon={<Lock aria-hidden="true" />} title="Assessment locked" description={`Complete all 4 levels first. You are ${enrollment.progress.percent}% through the course.`} action={back} />;
+    return <EmptyState icon={<Lock aria-hidden="true" />} title="Assessment locked" description={`Complete all levels first. You are ${enrollment.progress.percent}% through the course.`} action={back} />;
   }
   if (!state.published) {
     return <EmptyState icon={<Lock aria-hidden="true" />} title="The assessment opens soon" description="We'll let you know as soon as it is available." action={back} />;
@@ -51,7 +52,7 @@ export default async function AssessmentPage({ params }: PageProps<"/dashboard/c
       initialAttempt={live}
       initialOutcome={
         showResult
-          ? { resultId: "", correct: best.correct, total: best.total, percent: best.percent, grade: best.grade, passed: state.passed, certificateId: state.certificateId, submissionType: "manual" }
+          ? { resultId: "", correct: best.correct, total: best.total, percent: best.percent, grade: best.grade, passed: state.passed, certificateId: state.certificateId, certificateAvailableAt: state.certificateAvailableAt, submissionType: "manual" }
           : null
       }
       info={{

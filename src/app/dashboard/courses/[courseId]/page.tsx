@@ -1,6 +1,7 @@
-import { ArrowLeft, ArrowRight, Award, BookOpen, Clock, FileQuestion, Lock, RotateCcw, Target } from "lucide-react";
+import { ArrowLeft, ArrowRight, Award, BookOpen, CalendarDays, Clock, FileQuestion, Lock, RotateCcw, Target } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { requestTime } from "@/lib/utils/time";
 import { CourseIllustration } from "@/components/courses/course-illustration";
 import { LevelPath, type Level } from "@/components/dashboard/level-path";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ export default async function CoursePage({ params }: PageProps<"/dashboard/cours
     id: m.id,
     title: m.title,
     summary: m.summary,
+    topics: m.topics,
     lessons: m.lessons.map((l) => {
       const kind = l.type === "video" ? "video" : "pdf";
       const link = links[l.id];
@@ -68,6 +70,17 @@ export default async function CoursePage({ params }: PageProps<"/dashboard/cours
   const examUnlocked = percent >= 100;
   const attemptsLeft = Math.max(0, exam.maxAttempts - exam.attemptsUsed);
 
+  // Internship period: "Day X of N" since activation; the certificate unlocks after it.
+  const DAY = 86_400_000;
+  const now = requestTime();
+  const startedMs = enrollment.activatedAt ? Date.parse(enrollment.activatedAt) : now;
+  const period = enrollment.periodDays;
+  const dayNumber = Math.min(period, Math.max(1, Math.floor((now - startedMs) / DAY) + 1));
+  const periodOver = period === 0 || now >= startedMs + period * DAY;
+  const certAvailableMs = exam.certificateAvailableAt ? Date.parse(exam.certificateAvailableAt) : null;
+  const certLocked = exam.passed && certAvailableMs !== null && certAvailableMs > now;
+  const longDate = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
+
   return (
     <div className="flex flex-col gap-8">
       <Link href={routes.dashboard.courses} className="flex min-h-11 w-fit items-center gap-1.5 text-sm text-ink-soft hover:text-ink">
@@ -84,8 +97,18 @@ export default async function CoursePage({ params }: PageProps<"/dashboard/cours
           <div className="flex max-w-xl flex-col gap-3">
             <span className="font-mono text-xs tracking-[0.16em] text-mint">{enrollment.code}</span>
             <h1 className="text-[clamp(1.75rem,1.3rem+2vw,2.75rem)] leading-[1.05] font-medium tracking-[-0.03em]">{enrollment.title}</h1>
-            <p className="text-on-forest-soft">Complete all 4 levels to unlock the final assessment. Pass it to earn your certificate.</p>
+            <p className="text-on-forest-soft">
+              Complete all {levels.length} levels to unlock the final assessment. Pass it, and your certificate unlocks at the end of the{" "}
+              {period ? `${period / 7 === Math.round(period / 7) ? `${period / 7}-week` : `${period}-day`} internship` : "course"}.
+            </p>
             <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              {period > 0 && (
+                <div className="flex items-center gap-2">
+                  <CalendarDays aria-hidden="true" className="size-4 text-mint" />
+                  <dt className="sr-only">Internship period</dt>
+                  <dd>{periodOver ? `${period}-day internship complete` : `Day ${dayNumber} of ${period}`}</dd>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <BookOpen aria-hidden="true" className="size-4 text-mint" />
                 <dt className="sr-only">Levels</dt>
@@ -165,13 +188,18 @@ export default async function CoursePage({ params }: PageProps<"/dashboard/cours
                 </p>
               )}
               {!examUnlocked && <p className="text-sm text-ink-soft">Complete every level to unlock the assessment ({percent}% done).</p>}
+              {certLocked && certAvailableMs && (
+                <p className="text-sm">
+                  Your certificate unlocks on <strong className="font-medium">{longDate.format(new Date(certAvailableMs))}</strong>, at the end of your internship period.
+                </p>
+              )}
             </div>
           </div>
           <div className="shrink-0">
             {exam.passed ? (
-              <Button asChild>
+              <Button asChild variant={certLocked ? "secondary" : "primary"}>
                 <Link href={routes.dashboard.certificates}>
-                  View certificate <Award aria-hidden="true" />
+                  {certLocked ? "Certificate status" : "View certificate"} <Award aria-hidden="true" />
                 </Link>
               </Button>
             ) : examUnlocked && exam.published && (attemptsLeft > 0 || exam.inProgressAttemptId) ? (

@@ -176,7 +176,7 @@ pnpm seed
 pnpm dev
 ```
 
-`pnpm seed` writes the IoT and Arduino programs (4 levels each with a video and a PDF lesson, the
+`pnpm seed` writes the IoT and Arduino programs (6 levels each with a video and a PDF lesson, the
 published 25-question final assessment and 30 clearly-marked SAMPLE questions per course), the
 Hackathon Guide and public company settings. It refuses to run without the emulator unless
 `SEED_ALLOW_DEV_PROJECT=true`, and never against a project id containing "prod". Seeded documents

@@ -35,6 +35,7 @@ export interface Level {
   id: string;
   title: string;
   summary: string;
+  topics: string[];
   lessons: LevelLesson[];
 }
 
@@ -222,7 +223,28 @@ export function LevelPath({
                       transition={{ duration: 0.5, ease: EASE }}
                       className="overflow-hidden"
                     >
-                      <ul className="flex flex-col gap-3 border-t border-line p-4 md:pl-[5.5rem] md:pr-5 md:pb-5">
+                      {level.topics.length > 0 && (
+                        <div className="flex flex-col gap-3 border-t border-line px-4 pt-4 md:pr-5 md:pl-[5.5rem]">
+                          <p className="font-mono text-[11px] tracking-[0.14em] text-moss-text uppercase">
+                            Topics in this level · {level.topics.length}
+                          </p>
+                          <ol className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                            {level.topics.map((topic, t) => (
+                              <motion.li
+                                key={topic}
+                                initial={reduce ? false : { opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4, delay: 0.05 + t * 0.03, ease: EASE }}
+                                className="flex items-start gap-2.5 text-sm"
+                              >
+                                <span className="mt-0.5 font-mono text-[11px] text-ink-soft tabular-nums">{String(t + 1).padStart(2, "0")}</span>
+                                <span>{topic}</span>
+                              </motion.li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                      <ul className="flex flex-col gap-3 p-4 md:pr-5 md:pb-5 md:pl-[5.5rem]">
                         {level.lessons.map((lesson, k) => {
                           const isComplete = done.has(lesson.id);
                           const Icon =

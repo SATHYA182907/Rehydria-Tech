@@ -76,7 +76,8 @@ export interface Course<TTime> extends AdminAudit<TTime> {
   lessonCount: number;
   completion: CourseCompletionRules;
   finalAssessmentId: string | null;
-  certificate: { enabled: boolean; templateId: "classic"; titleOverride: string | null };
+  /** unlockAfterDays: the certificate becomes available this many days after enrollment (internship period). */
+  certificate: { enabled: boolean; templateId: "classic"; titleOverride: string | null; unlockAfterDays?: number };
   seo: { title: string | null; description: string | null; ogImagePath: string | null };
   publishedAt: TTime | null;
 }
@@ -86,6 +87,8 @@ export interface CourseModule<TTime> extends Audit<TTime> {
   courseId: string;
   title: string;
   summary: string;
+  /** Syllabus topics covered in this level. */
+  topics?: string[];
   order: number;
   status: Exclude<PublishStatus, "archived">;
   lessonCount: number;
@@ -250,6 +253,8 @@ export interface Certificate<TTime> {
   grade: string;
   completionDate: TTime;
   issuedAt: TTime | null;
+  /** Shown, printable and verifiable from this moment (enrollment + internship period). */
+  availableAt: TTime | null;
   status: CertificateStatus;
   pdfPath: string | null;
   directorName: string;

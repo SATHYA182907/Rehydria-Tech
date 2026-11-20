@@ -65,7 +65,7 @@ Rules: owner read. Writes server only (profile edits go through a Server Action 
 | moduleCount, lessonCount | number | Maintained by admin services |
 | completion | `{ requireAllLessons: boolean; minProgressPercent: number; requireAssessmentPass: boolean }` | Default `{ true, 100, true }` |
 | finalAssessmentId | string \| null | |
-| certificate | `{ enabled: boolean; templateId: "classic"; titleOverride: string \| null }` | |
+| certificate | `{ enabled: boolean; templateId: "classic"; titleOverride: string \| null; unlockAfterDays?: number }` | `unlockAfterDays` = internship period (launch courses: 14) |
 | seo | `{ title: string \| null; description: string \| null; ogImagePath: string \| null }` | |
 | publishedAt | Timestamp \| null | |
 | createdAt, updatedAt, createdBy, updatedBy | | |
@@ -82,6 +82,7 @@ Rules: public read when `status == "published"`; admin claim reads all.
 | courseId | string |
 | title | string — "Module 01: Introduction to Arduino" |
 | summary | string |
+| topics | string[] (syllabus topics of the level) |
 | order | number |
 | status | `"draft" \| "published"` |
 | lessonCount | number |
@@ -254,6 +255,7 @@ Rules: owner read; admin reads all.
 | grade | string | |
 | percent | number | score of the passing attempt |
 | completionDate | Timestamp | |
+| availableAt | Timestamp \| null | Enrollment `activatedAt` + course `certificate.unlockAfterDays` (14). Before this the certificate stays locked: hidden on the dashboard, not printable, and `/verify` reports not found |
 | issuedAt | Timestamp \| null | |
 | status | `"pending" \| "valid" \| "revoked" \| "failed"` | Issued as `valid` in the grading transaction (HTML certificate); `pending` is reserved for the future PDF render function |
 | pdfPath | string \| null | private `certificates/{certificateId}.pdf` |

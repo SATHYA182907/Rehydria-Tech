@@ -29,6 +29,8 @@ export interface AttemptOutcome {
   grade: string;
   passed: boolean;
   certificateId: string | null;
+  /** ISO time the certificate unlocks (end of the internship period); null if unknown. */
+  certificateAvailableAt?: string | null;
   submissionType: "manual" | "auto_timeout";
 }
 
@@ -99,12 +101,13 @@ export async function finalizeAttempt(attemptRef: DocumentReference, submissionT
     const served = (a.questions as ServedQuestion[]) ?? [];
     const answers: Record<string, OptionId> = { ...(a.answers as Record<string, OptionId>), ...lateAnswers };
     const keyRefs = served.map((q) => db.collection(COLLECTIONS.questions).doc(q.questionId));
-    const [keys, assessmentSnap, userSnap, companySnap, enrollSnap] = await Promise.all([
+    const [keys, assessmentSnap, userSnap, companySnap, enrollSnap, courseSnap] = await Promise.all([
       keyRefs.length ? tx.getAll(...keyRefs) : Promise.resolve([]),
       tx.get(db.collection(COLLECTIONS.assessments).doc(String(a.assessmentId))),
       tx.get(db.collection(COLLECTIONS.users).doc(String(a.uid))),
       tx.get(db.collection(COLLECTIONS.settings).doc(SETTINGS_DOCS.company)),
       enrollmentDoc ? tx.get(enrollmentDoc.ref) : Promise.resolve(null),
+      tx.get(db.collection(COLLECTIONS.courses).doc(String(a.courseId))),
     ]);
     const correct = keys.filter((k) => {
       const key = k.data()?.correctOptionId;
@@ -122,8 +125,13 @@ export async function finalizeAttempt(attemptRef: DocumentReference, submissionT
     const timeTakenSeconds = Math.max(0, Math.round((Math.min(Date.now(), ms(a.expiresAt)) - ms(a.startedAt)) / 1000));
 
     let certificateId: string | null = (enrollment?.certificateId as string | null) ?? null;
+    let certificateAvailableAt: Timestamp | null = null;
     if (graded.passed && !certificateId && enrollSnap) {
       certificateId = generateCertificateId();
+      // Internship period: the certificate becomes available N days after enrollment.
+      const unlockDays = Number((courseSnap.data()?.certificate as { unlockAfterDays?: number } | undefined)?.unlockAfterDays ?? 0);
+      const startMs = ms(enrollment?.activatedAt) || Date.now();
+      certificateAvailableAt = Timestamp.fromMillis(Math.max(Date.now(), startMs + unlockDays * 86_400_000));
       const course = enrollment?.courseSnapshot as { title?: string } | undefined;
       tx.create(db.collection(COLLECTIONS.certificates).doc(certificateId), {
         uid: a.uid,
@@ -131,11 +139,12 @@ export async function finalizeAttempt(attemptRef: DocumentReference, submissionT
         enrollmentId: enrollSnap.id,
         resultId: resultRef.id,
         studentName,
-        courseTitle: String(course?.title ?? "Rehydria Technology course"),
+        courseTitle: String(courseSnap.data()?.title ?? course?.title ?? "Rehydria Technology course"),
         grade: graded.grade,
         percent: graded.percent,
         completionDate: now,
         issuedAt: now,
+        availableAt: certificateAvailableAt,
         status: "valid",
         pdfPath: null,
         directorName: String(companySnap.data()?.directorName ?? ""),
@@ -180,7 +189,13 @@ export async function finalizeAttempt(attemptRef: DocumentReference, submissionT
       });
     }
 
-    return { resultId: resultRef.id, ...graded, certificateId: graded.passed ? certificateId : null, submissionType };
+    return {
+      resultId: resultRef.id,
+      ...graded,
+      certificateId: graded.passed ? certificateId : null,
+      certificateAvailableAt: certificateAvailableAt ? certificateAvailableAt.toDate().toISOString() : null,
+      submissionType,
+    };
   });
 }
 
@@ -209,7 +224,14 @@ export async function startAttempt(uid: string, courseId: string): Promise<LiveA
   const enrollment = await findEnrollment(db, uid, courseId);
   if (!enrollment) throw new AssessmentError("You are not enrolled in this course.");
   const e = enrollment.data();
-  if (Number(e.progress?.percent ?? 0) < 100) throw new AssessmentError("Complete every level to unlock the assessment.");
+  // Recompute from the live curriculum (stored progress can be stale after levels are added).
+  const [lessonsSnap, progressSnap] = await Promise.all([
+    db.collection(COLLECTIONS.lessons).where("courseId", "==", courseId).get(),
+    db.collection(COLLECTIONS.lessonProgress).where("uid", "==", uid).get(),
+  ]);
+  const doneIds = new Set(progressSnap.docs.filter((d) => d.data().courseId === courseId && d.data().status === "completed").map((d) => String(d.data().lessonId)));
+  const required = lessonsSnap.docs.filter((d) => d.data().status === "published" && d.data().required !== false);
+  if (required.length === 0 || required.some((d) => !doneIds.has(d.id))) throw new AssessmentError("Complete every level to unlock the assessment.");
   if (e.assessment?.passed === true) throw new AssessmentError("You have already passed this assessment.");
 
   const course = (await db.collection(COLLECTIONS.courses).doc(courseId).get()).data();

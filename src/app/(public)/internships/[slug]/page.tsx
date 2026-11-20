@@ -131,7 +131,7 @@ async function CourseContent({ params }: { params: PageProps<"/internships/[slug
               <div className="flex items-end justify-between gap-4">
                 <h2 id="curriculum-title" className="text-3xl font-medium tracking-tight">Curriculum</h2>
                 <p className="font-mono text-xs text-ink-soft">
-                  {course.moduleCount} modules · {course.lessonCount} lessons
+                  {course.moduleCount} levels · {course.lessonCount} lessons
                 </p>
               </div>
               {course.curriculum.length > 0 ? (
@@ -145,6 +145,16 @@ async function CourseContent({ params }: { params: PageProps<"/internships/[slug
                         </span>
                       </AccordionTrigger>
                       <AccordionContent>
+                        {mod.topics.length > 0 && (
+                          <ol className="mb-4 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                            {mod.topics.map((topic, t) => (
+                              <li key={topic} className="flex items-start gap-2.5 text-[15px]">
+                                <span className="mt-0.5 font-mono text-xs text-moss-text tabular-nums">{String(t + 1).padStart(2, "0")}</span>
+                                <span>{topic}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
                         <ul className="flex flex-col divide-y divide-line rounded-sm border border-line bg-surface">
                           {mod.lessons.map((lesson) => {
                             const Icon = LESSON_ICON[lesson.type as keyof typeof LESSON_ICON] ?? PlayCircle;

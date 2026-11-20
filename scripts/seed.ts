@@ -1,7 +1,7 @@
 /**
  * DEVELOPMENT SEED: never run against production.
  *
- * Writes the two launch programs (IoT, Arduino: 4 levels + final assessment, from
+ * Writes the two launch programs (IoT, Arduino: 6 levels + final assessment, from
  * scripts/lib/course-catalog.ts) with DEMO lesson files and the DEMO question bank
  * (scripts/lib/demo-content.ts), the Hackathon Guide product and the public company settings.
  *
