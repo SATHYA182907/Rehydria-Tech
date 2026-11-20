@@ -46,7 +46,7 @@ export function GoogleButton({ onSuccess, onError, label = "Continue with Google
 
 export function OrDivider() {
   return (
-    <div className="my-6 flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+    <div className="my-5 flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
       <span className="h-px flex-1 bg-line" />
       or
       <span className="h-px flex-1 bg-line" />

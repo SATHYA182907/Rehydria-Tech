@@ -31,7 +31,7 @@ export function PaymentPending({ fee, enrollmentId, previewMode }: { fee: string
     });
   return (
     <div className="flex flex-col gap-6">
-      <Stepper current={1} />
+      <Stepper current={2} />
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}

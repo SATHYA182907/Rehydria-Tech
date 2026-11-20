@@ -43,10 +43,10 @@ export function LoginForm() {
 
   return (
     <div className="flex flex-col">
-      {error && <div className="mb-5"><FormAlert>{error}</FormAlert></div>}
+      {error && <div className="mb-4"><FormAlert>{error}</FormAlert></div>}
       <GoogleButton onSuccess={done} onError={setError} />
       <OrDivider />
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         <Field label="Email address" error={formState.errors.email?.message}>
           <Input type="email" autoComplete="email" {...register("email")} />
         </Field>
@@ -62,7 +62,7 @@ export function LoginForm() {
           Log in
         </Button>
       </form>
-      <p className="mt-8 text-center text-sm text-ink-soft">
+      <p className="mt-5 text-center text-sm text-ink-soft">
         New to Rehydria?{" "}
         <Link href="/enroll" className="font-medium text-moss-text hover:underline">
           Create an account

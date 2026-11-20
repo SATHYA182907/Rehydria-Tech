@@ -3,10 +3,10 @@ import { Eyebrow } from "@/components/layout/section";
 
 export function AuthHeading({ eyebrow, title, children }: { eyebrow: string; title: ReactNode; children?: ReactNode }) {
   return (
-    <div className="mb-8 flex flex-col gap-4">
+    <div className="mb-6 flex flex-col gap-2.5 [@media(max-height:820px)]:mb-4 [@media(max-height:820px)]:gap-1.5">
       <Eyebrow>{eyebrow}</Eyebrow>
-      <h1 className="text-4xl leading-tight font-medium tracking-[-0.035em]">{title}</h1>
-      {children && <p className="leading-relaxed text-ink-soft">{children}</p>}
+      <h1 className="text-[clamp(1.875rem,1.5rem+1vw,2.25rem)] leading-tight font-medium tracking-[-0.035em]">{title}</h1>
+      {children && <p className="text-[15px] leading-relaxed text-ink-soft [@media(max-height:820px)]:hidden">{children}</p>}
     </div>
   );
 }
