@@ -14,7 +14,8 @@ export interface RegistrationProfile {
  * browser SDK out (the httpOnly cookie is the only session). Throws a user-facing message.
  */
 export async function createServerSession(credential: UserCredential, profile?: RegistrationProfile): Promise<{ isAdmin: boolean; landing: string }> {
-  const idToken = await credential.user.getIdToken(true);
+  // The token was just issued by the sign-in call, so no forced refresh (saves a round trip).
+  const idToken = await credential.user.getIdToken();
   const res = await fetch("/api/auth/session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

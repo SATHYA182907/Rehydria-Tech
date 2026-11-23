@@ -78,7 +78,9 @@ async function createSession(req: NextRequest) {
   const auth = getAuth(adminApp());
   let decoded;
   try {
-    decoded = await auth.verifyIdToken(parsed.data.idToken, true);
+    // Signature/expiry checked locally; createSessionCookie below validates the token with Firebase
+    // Auth again (and the token must be from a sign-in in the last 5 minutes).
+    decoded = await auth.verifyIdToken(parsed.data.idToken);
   } catch (err) {
     console.warn("[auth/session] token rejected:", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Your sign-in could not be verified. Please try again." }, { status: 401 });
