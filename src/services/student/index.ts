@@ -426,3 +426,23 @@ export async function getCourseAssessmentState(uid: string, courseId: string): P
     certificateAvailableAt: toIso(cert?.availableAt),
   };
 }
+
+/**
+ * Where a student should land after signing in:
+ *   one active course       → that course's page (straight into the course portal)
+ *   several active courses  → My courses
+ *   only a pending application → its payment step
+ *   nothing yet             → My courses (which offers enrollment)
+ */
+export async function getLandingPath(uid: string): Promise<string> {
+  const snap = await adminDb().collection(COLLECTIONS.enrollments).where("uid", "==", uid).get();
+  const all = rows(snap);
+  const active = all.filter((r) => r.status === "active" || r.status === "completed");
+  if (active.length === 1) return `/dashboard/courses/${encodeURIComponent(String(active[0]!.courseId))}`;
+  if (active.length > 1) return "/dashboard/courses";
+  const pending = all
+    .filter((r) => r.status === "pending_payment")
+    .sort((a, b) => (toIso(b.updatedAt) ?? "").localeCompare(toIso(a.updatedAt) ?? ""))[0];
+  if (pending) return `/enroll/payment?id=${encodeURIComponent(pending.id)}`;
+  return "/dashboard/courses";
+}

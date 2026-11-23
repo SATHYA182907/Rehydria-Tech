@@ -8,7 +8,8 @@ import { appEnv } from "@/lib/env/server";
 import { adminApp, isFirebaseConfigured } from "@/lib/firebase/admin";
 import { fullNameSchema, indianMobileSchema, toE164India } from "@/lib/validations/common";
 import { ensureUserProfile } from "@/services/auth/profile";
-import { SIGNED_IN_HINT_COOKIE } from "@/services/auth/session";
+import { getLandingPath } from "@/services/student";
+import { getSessionUser, SIGNED_IN_HINT_COOKIE } from "@/services/auth/session";
 import { clientIp, rateLimit } from "@/services/security/rate-limit";
 
 /**
@@ -57,18 +58,21 @@ export async function handlePost(req: NextRequest) {
 async function createSession(req: NextRequest) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
   if (!isFirebaseConfigured()) return unavailable();
-  let allowed: boolean;
-  try {
-    allowed = await rateLimit("session", await clientIp(), 10, 600);
-  } catch (err) {
-    // Firestore unreachable usually means the service-account credentials are wrong.
-    return serverFailure("firestore", err);
-  }
-  if (!allowed) {
+  // Rate limit and body parsing are independent: run them together.
+  const [limit, body] = await Promise.all([
+    rateLimit("session", await clientIp(), 10, 600).then(
+      (ok) => ({ ok }),
+      (err: unknown) => ({ err }),
+    ),
+    req.json().catch(() => null),
+  ]);
+  // Firestore unreachable usually means the service-account credentials are wrong.
+  if ("err" in limit) return serverFailure("firestore", limit.err);
+  if (!limit.ok) {
     return NextResponse.json({ error: "Too many attempts. Please wait a few minutes." }, { status: 429 });
   }
 
-  const parsed = bodySchema.safeParse(await req.json().catch(() => null));
+  const parsed = bodySchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
 
   const auth = getAuth(adminApp());
@@ -85,21 +89,25 @@ async function createSession(req: NextRequest) {
 
   const days = appEnv().sessionCookieDays;
   const expiresIn = days * 24 * 60 * 60 * 1000;
-  const sessionCookie = await auth.createSessionCookie(parsed.data.idToken, { expiresIn });
-
-  await ensureUserProfile({
-    uid: decoded.uid,
-    email: decoded.email ?? null,
-    name: (decoded.name as string | undefined) ?? null,
-    fullName: parsed.data.profile?.fullName,
-    phone: parsed.data.profile ? toE164India(parsed.data.profile.phone) : null,
-  });
+  const isAdmin = decoded.admin === true;
+  // Cookie, profile and the student's landing page are independent: one parallel round.
+  const [sessionCookie, , landing] = await Promise.all([
+    auth.createSessionCookie(parsed.data.idToken, { expiresIn }),
+    ensureUserProfile({
+      uid: decoded.uid,
+      email: decoded.email ?? null,
+      name: (decoded.name as string | undefined) ?? null,
+      fullName: parsed.data.profile?.fullName,
+      phone: parsed.data.profile ? toE164India(parsed.data.profile.phone) : null,
+    }),
+    isAdmin ? Promise.resolve("/admin") : getLandingPath(decoded.uid).catch(() => "/dashboard/courses"),
+  ]);
 
   const jar = await cookies();
   const secure = process.env.NODE_ENV === "production";
   jar.set(SESSION_COOKIE_NAME, sessionCookie, { httpOnly: true, secure, sameSite: "lax", path: "/", maxAge: expiresIn / 1000 });
-  jar.set(SIGNED_IN_HINT_COOKIE, decoded.admin === true ? "admin" : "1", { httpOnly: false, secure, sameSite: "lax", path: "/", maxAge: expiresIn / 1000 });
-  return NextResponse.json({ ok: true, isAdmin: decoded.admin === true });
+  jar.set(SIGNED_IN_HINT_COOKIE, isAdmin ? "admin" : "1", { httpOnly: false, secure, sameSite: "lax", path: "/", maxAge: expiresIn / 1000 });
+  return NextResponse.json({ ok: true, isAdmin, landing });
 }
 
 export async function handleDelete(req: NextRequest) {
@@ -118,4 +126,14 @@ export async function handleDelete(req: NextRequest) {
     }
   }
   return NextResponse.json({ ok: true });
+}
+
+/** GET: is the session cookie still valid? Clears the UI hint cookie when it is not. */
+export async function handleGet() {
+  const user = await getSessionUser();
+  if (!user) {
+    const jar = await cookies();
+    if (jar.get(SIGNED_IN_HINT_COOKIE)) jar.delete(SIGNED_IN_HINT_COOKIE);
+  }
+  return NextResponse.json({ signedIn: Boolean(user), isAdmin: user?.isAdmin === true }, { headers: { "Cache-Control": "no-store" } });
 }

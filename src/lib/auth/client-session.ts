@@ -13,18 +13,18 @@ export interface RegistrationProfile {
  * Exchanges the signed-in user's fresh ID token for the server session cookie, then signs the
  * browser SDK out (the httpOnly cookie is the only session). Throws a user-facing message.
  */
-export async function createServerSession(credential: UserCredential, profile?: RegistrationProfile): Promise<{ isAdmin: boolean }> {
+export async function createServerSession(credential: UserCredential, profile?: RegistrationProfile): Promise<{ isAdmin: boolean; landing: string }> {
   const idToken = await credential.user.getIdToken(true);
   const res = await fetch("/api/auth/session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idToken, profile }),
   });
-  const body = (await res.json().catch(() => ({}))) as { error?: string; isAdmin?: boolean };
+  const body = (await res.json().catch(() => ({}))) as { error?: string; isAdmin?: boolean; landing?: string };
   await signOut(await clientAuth());
   if (!res.ok) throw new Error(body.error ?? `Sign-in failed (server error ${res.status}). Please try again in a moment.`);
   notify();
-  return { isAdmin: body.isAdmin === true };
+  return { isAdmin: body.isAdmin === true, landing: safeNext(body.landing, body.isAdmin ? "/admin" : "/dashboard/courses") };
 }
 
 export async function destroyServerSession(): Promise<void> {

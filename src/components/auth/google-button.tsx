@@ -17,7 +17,7 @@ function GoogleMark() {
   );
 }
 
-export function GoogleButton({ onSuccess, onError, label = "Continue with Google" }: { onSuccess: (isAdmin: boolean) => void; onError: (message: string) => void; label?: string }) {
+export function GoogleButton({ onSuccess, onError, label = "Continue with Google" }: { onSuccess: (isAdmin: boolean, landing: string) => void; onError: (message: string) => void; label?: string }) {
   const [loading, setLoading] = useState(false);
   return (
     <Button
@@ -30,8 +30,8 @@ export function GoogleButton({ onSuccess, onError, label = "Continue with Google
         setLoading(true);
         try {
           const credential = await signInWithPopup(await clientAuth(), new GoogleAuthProvider());
-          const { isAdmin } = await createServerSession(credential);
-          onSuccess(isAdmin);
+          const { isAdmin, landing } = await createServerSession(credential);
+          onSuccess(isAdmin, landing);
         } catch (err) {
           onError(authErrorMessage(err));
           setLoading(false);

@@ -30,3 +30,8 @@ export async function DELETE(req: NextRequest) {
   const mod = await load();
   return mod instanceof Error ? loadFailure(mod) : mod.handleDelete(req);
 }
+
+export async function GET() {
+  const mod = await load();
+  return mod instanceof Error ? loadFailure(mod) : mod.handleGet();
+}

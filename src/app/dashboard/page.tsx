@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
+import { requireUser } from "@/services/auth/session";
+import { getLandingPath } from "@/services/student";
 
-/** The student area opens on Courses. */
-export default function DashboardHome() {
-  redirect("/dashboard/courses");
+/** /dashboard sends students straight to their course (see getLandingPath). */
+export default async function DashboardHome() {
+  const user = await requireUser("/dashboard");
+  redirect(await getLandingPath(user.uid));
 }

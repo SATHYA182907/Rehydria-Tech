@@ -45,6 +45,14 @@ learning flow was verified the same way: enroll → payment placeholder → admi
 levels → exam (answers survive a reload) → A+ result → certificate unlocked → print/PDF →
 public verify, plus phone layout (no horizontal overflow).
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request: `pnpm install
+--frozen-lockfile`, `pnpm check` (typecheck app + functions, ESLint, unit tests) and `pnpm build`
+with only the public web config. Vercel deploys `main` independently (check its status on the
+commit). End-to-end flows (sign-up → payment step → levels → exam → certificate, login landing,
+logout) are verified against the production build with the Firebase emulators.
+
 ## Roadmap
 
 ### Phase 1: Setup, architecture & documentation ✅

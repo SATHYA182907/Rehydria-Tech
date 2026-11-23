@@ -141,6 +141,10 @@ Signing needs the service account to hold `roles/iam.serviceAccountTokenCreator`
   `checkRevoked: true` for the admin area (`requireAdmin`), so revoking a user or removing the
   admin claim takes effect immediately. Student pages verify signature and expiry locally (no
   extra network call per navigation); sign-out deletes the cookie and revokes refresh tokens.
+- `GET /api/auth/session` reports whether the session cookie is still valid (and clears a stale
+  UI hint cookie); the login page uses it before offering an "already signed in" shortcut.
+- `POST /api/auth/session` returns the student's landing page (`getLandingPath`: their single active
+  course, else the pending application's payment step, else My courses).
 - `POST /api/auth/session` requires an ID token with `auth_time` within 5 minutes and is
   CSRF-protected: it requires `Origin` to match `NEXT_PUBLIC_SITE_URL`.
 - Server Actions rely on Next's built-in Origin/Host check; `serverActions.allowedOrigins`
